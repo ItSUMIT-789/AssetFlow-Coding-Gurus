@@ -3,6 +3,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import Maintenance from './pages/Maintenance'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
     <Route path="/login" element={<Login />} />
     <Route path="/register" element={<Register />} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+    <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes></BrowserRouter>
 }

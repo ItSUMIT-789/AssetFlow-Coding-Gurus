@@ -1,12 +1,12 @@
 import { BarChart3, Bell, BookOpen, BriefcaseBusiness, Building2, CheckCircle2, LogOut, Menu, Settings, X } from 'lucide-react'
 import { useState } from 'react'
-import Logo from './Logo'
+import { Link, useLocation } from 'react-router-dom'
 
 const menuItems = [
   { name: 'Dashboard', icon: BarChart3, href: '/dashboard' },
-  { name: 'Organization setup', icon: Building2, href: '/dashboard', active: true },
+  { name: 'Organization setup', icon: Building2, href: '/dashboard' },
   { name: 'Assets', icon: BriefcaseBusiness, href: '#' },
-  { name: 'Allocation & Transfer', icon: BookOpen, href: '#' },
+  { name: 'Allocation & Transfer', icon: BookOpen, href: '/dashboard/allocation' },
   { name: 'Resource Booking', icon: CheckCircle2, href: '#' },
   { name: 'Maintenance', icon: Settings, href: '#' },
   { name: 'Audit', icon: BarChart3, href: '#' },
@@ -19,6 +19,13 @@ const bottomItems = [
 
 export default function AdminSidebar({ onLogout }) {
   const [open, setOpen] = useState(true)
+  const location = useLocation()
+
+  const isActive = (href) => {
+    if (href === '/dashboard' && location.pathname === '/dashboard') return true
+    if (href !== '/dashboard' && href !== '#' && location.pathname === href) return true
+    return false
+  }
 
   return (
     <>
@@ -54,20 +61,35 @@ export default function AdminSidebar({ onLogout }) {
           <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
             {menuItems.map((item) => {
               const Icon = item.icon
+              const active = isActive(item.href)
+              
+              if (item.href === '#') {
+                return (
+                  <button
+                    key={item.name}
+                    disabled
+                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 transition cursor-not-allowed"
+                  >
+                    <Icon size={18} />
+                    <span>{item.name}</span>
+                  </button>
+                )
+              }
+
               return (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
+                  to={item.href}
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
-                    item.active
+                    active
                       ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20'
                       : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
                   <Icon size={18} />
                   <span>{item.name}</span>
-                </a>
+                </Link>
               )
             })}
           </nav>
@@ -77,14 +99,14 @@ export default function AdminSidebar({ onLogout }) {
             {bottomItems.map((item) => {
               const Icon = item.icon
               return (
-                <a
+                <button
                   key={item.name}
-                  href={item.href}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                  disabled
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 transition cursor-not-allowed"
                 >
                   <Icon size={18} />
                   <span>{item.name}</span>
-                </a>
+                </button>
               )
             })}
 

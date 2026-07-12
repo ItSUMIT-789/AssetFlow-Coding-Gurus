@@ -77,6 +77,7 @@ const tooltipStyle = {
 };
 
 function Topbar({ dark, setDark, setMobileOpen }) {
+  const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-30 flex h-20 items-center gap-3 border-b border-slate-200/70 bg-slate-50/85 px-4 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/85 sm:px-6">
       <button
@@ -106,6 +107,7 @@ function Topbar({ dark, setDark, setMobileOpen }) {
           {dark ? <Sun size={19} /> : <Moon size={19} />}
         </button>
         <button
+          onClick={() => navigate("/dashboard/notifications")}
           aria-label="Notifications"
           className="relative grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 dark:border-slate-800 dark:bg-slate-900"
         >
@@ -476,45 +478,6 @@ export default function Dashboard() {
               Review assets <ArrowRight size={14} />
             </button>
           </motion.div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              [
-                Plus,
-                "Register Asset",
-                "bg-blue-50 text-blue-600 dark:bg-blue-500/10",
-              ],
-              [
-                UserPlus,
-                "Add Employee",
-                "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10",
-              ],
-              [
-                CalendarDays,
-                "Book Resource",
-                "bg-violet-50 text-violet-600 dark:bg-violet-500/10",
-              ],
-              [
-                ClipboardPlus,
-                "Raise Maintenance Request",
-                "bg-amber-50 text-amber-600 dark:bg-amber-500/10",
-              ],
-            ].map(([I, t, c]) => (
-              <motion.button
-                whileHover={{ scale: 1.015 }}
-                whileTap={{ scale: 0.98 }}
-                key={t}
-                className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 text-left text-sm font-bold text-navy-900 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-              >
-                <span
-                  className={`grid size-10 place-items-center rounded-xl ${c}`}
-                >
-                  <I size={19} />
-                </span>
-                {t}
-                <ArrowRight className="ml-auto text-slate-300" size={16} />
-              </motion.button>
-            ))}
-          </div>
           <div className="mt-5">
             <Charts />
           </div>

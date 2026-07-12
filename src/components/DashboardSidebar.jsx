@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeftRight,
@@ -17,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import Logo from "./Logo";
+import { NotificationDialog } from "../pages/NotificationCenter";
 import { getCurrentUser } from "../utils/auth";
 import { canAccess, ROLES } from "../utils/rbac";
 
@@ -48,6 +50,7 @@ export default function DashboardSidebar({
   activePage = "Dashboard",
 }) {
   const navigate = useNavigate();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const user = getCurrentUser();
   const visibleNav = nav.filter(([, label, , module]) =>
     label === "Dashboard"
@@ -75,7 +78,11 @@ export default function DashboardSidebar({
         {visibleNav.map(([Icon, label, path]) => (
           <button
             onClick={() => {
-              if (path) navigate(path);
+              if (label === "Notifications") {
+                setNotificationsOpen(true);
+              } else if (path) {
+                navigate(path);
+              }
               setMobileOpen(false);
             }}
             title={collapsed ? label : ""}
@@ -130,6 +137,14 @@ export default function DashboardSidebar({
           </>
         )}
       </AnimatePresence>
+      <NotificationDialog
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        onViewAll={() => {
+          setNotificationsOpen(false);
+          navigate("/dashboard/notifications");
+        }}
+      />
     </>
   );
 }

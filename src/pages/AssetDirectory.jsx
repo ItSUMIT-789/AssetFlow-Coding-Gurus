@@ -22,6 +22,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
+import QRCode from "react-qr-code";
 import DashboardSidebar from "../components/DashboardSidebar";
 import AdminTopbar from "../components/AdminTopbar";
 import { assetTimeline } from "../data/assetData";
@@ -82,6 +83,94 @@ const prettyDate = (v) =>
         year: "numeric",
       })
     : "—";
+
+const buildQrValue = (asset) =>
+  JSON.stringify({
+    assetId: asset.tag || asset.qr || `ASSET-${asset.id}`,
+    assetName: asset.name || "",
+    category: asset.category || "",
+    department: asset.department || "",
+    assignedTo: asset.assigned || "—",
+    status: asset.status || "",
+    location: asset.location || "",
+    purchaseDate: asset.purchase ? prettyDate(asset.purchase) : "—",
+  });
+
+function downloadSvgAsPng(svgNode, filename) {
+  if (!svgNode) throw new Error("QR SVG not found");
+  const serializer = new XMLSerializer();
+  const svgText = serializer.serializeToString(svgNode);
+  const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+  const image = new Image();
+
+  return new Promise((resolve, reject) => {
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 220;
+      canvas.height = 220;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(url);
+        reject(new Error("Canvas unavailable"));
+        return;
+      }
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = filename;
+      link.click();
+      resolve(void 0);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to render QR"));
+    };
+    image.src = url;
+  });
+}
+
+function printQrDialog({ title, assetName, assetId, qrMarkup }) {
+  const popup = window.open("", "_blank", "width=640,height=760");
+  if (!popup) throw new Error("Print window blocked");
+  popup.document.write(`
+    <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f8fafc; }
+          .wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+          .card { width: 100%; max-width: 420px; background: #fff; border-radius: 24px; padding: 28px; box-shadow: 0 20px 70px rgba(15,23,42,.18); text-align: center; }
+          .title { color: #3563e9; font-size: 12px; font-weight: 800; letter-spacing: .18em; }
+          h1 { margin: 10px 0 8px; color: #0f172a; font-size: 24px; }
+          p { margin: 0; color: #64748b; }
+          .qr { display: flex; justify-content: center; padding: 22px 0 16px; }
+          .meta { margin-top: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #0f172a; }
+          @media print { body { background: #fff; } .wrap { padding: 0; } .card { box-shadow: none; border: 1px solid #e2e8f0; } }
+        </style>
+      </head>
+      <body>
+        <div class="wrap">
+          <div class="card">
+            <div class="title">ASSET QR CODE</div>
+            <h1>${assetName}</h1>
+            <p>${title}</p>
+            <div class="qr">${qrMarkup}</div>
+            <div class="meta">${assetId}</div>
+          </div>
+        </div>
+        <script>
+          window.onload = () => { window.focus(); window.print(); window.onafterprint = () => window.close(); };
+        </script>
+      </body>
+    </html>
+  `);
+  popup.document.close();
+}
 
 function FormModal({ asset, onClose, onSave }) {
   const [form, setForm] = useState(asset || blank),
@@ -381,31 +470,100 @@ const Status = ({ value }) => (
 );
 
 function QR({ asset, onClose }) {
-  const cells = Array.from(
-    { length: 121 },
-    (_, i) => (i * 17 + asset.id * 7) % 11 < 5,
-  );
+  const qrRef = useRef(null);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const qrValue = useMemo(() => (asset ? buildQrValue(asset) : ""), [asset]);
+
+  useEffect(() => {
+    setReady(false);
+    setError("");
+    if (!asset || !qrValue) {
+      setError("Unable to generate QR Code.");
+    }
+    const timer = setTimeout(() => setReady(true), 300);
+    return () => clearTimeout(timer);
+  }, [asset, qrValue]);
+
+  const handleDownload = async () => {
+    try {
+      setBusy(true);
+      await downloadSvgAsPng(
+        qrRef.current,
+        `${asset.tag || asset.name || "asset"}-qr.png`,
+      );
+    } catch {
+      setError("Unable to generate QR Code.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handlePrint = () => {
+    try {
+      const qrMarkup = qrRef.current ? qrRef.current.outerHTML : "";
+      printQrDialog({
+        title: asset.name,
+        assetName: asset.name,
+        assetId: asset.tag,
+        qrMarkup,
+      });
+    } catch {
+      setError("Unable to generate QR Code.");
+    }
+  };
+
   return (
     <Overlay onClose={onClose}>
       <motion.div
-        initial={{ scale: 0.95 }}
-        animate={{ scale: 1 }}
+        initial={{ opacity: 0, scale: 0.96, y: 14 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 14 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-3xl bg-white p-7 text-center dark:bg-slate-900"
+        className="w-full max-w-md rounded-3xl bg-white p-5 text-center shadow-2xl dark:bg-slate-900 sm:p-7"
       >
         <b className="text-brand-500">ASSET QR CODE</b>
         <h2 className="mt-2 text-xl font-extrabold">{asset.name}</h2>
-        <div className="mx-auto mt-6 grid size-52 grid-cols-11 gap-0.5 rounded-2xl border-8 border-white bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-800">
-          {cells.map((on, i) => (
-            <span
-              key={i}
-              className={
-                on ? "bg-navy-950 dark:bg-white" : "bg-white dark:bg-slate-800"
-              }
-            />
-          ))}
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-inner dark:border-slate-800 dark:bg-white">
+          <div className="flex min-h-[220px] items-center justify-center">
+            {error ? (
+              <p className="text-sm font-semibold text-red-500">{error}</p>
+            ) : ready ? (
+              <QRCode
+                ref={qrRef}
+                value={qrValue}
+                size={220}
+                style={{ width: 220, height: 220 }}
+                bgColor="#FFFFFF"
+                fgColor="#000000"
+                level="M"
+                className="rounded-2xl"
+              />
+            ) : (
+              <div className="grid h-[220px] w-[220px] place-items-center rounded-2xl bg-slate-50">
+                <div className="size-10 animate-spin rounded-full border-4 border-blue-100 border-t-brand-500" />
+              </div>
+            )}
+          </div>
         </div>
         <p className="mt-5 font-mono font-bold">{asset.tag}</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            onClick={handleDownload}
+            disabled={busy || !!error || !ready}
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          >
+            Download QR
+          </button>
+          <button
+            onClick={handlePrint}
+            disabled={!!error || !ready}
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          >
+            Print QR
+          </button>
+        </div>
         <button
           onClick={onClose}
           className="mt-5 w-full rounded-xl bg-brand-500 py-3 font-bold text-white"

@@ -1,0 +1,8 @@
+import { Code2, Mail, MapPin, MessageCircle, Phone, Share2 } from 'lucide-react'
+import Logo from './Logo'
+export default function Footer(){return <footer id="contact" className="bg-navy-950 text-slate-400"><div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
+  <div><Logo light/><p className="mt-5 max-w-sm text-sm leading-6">A centralized enterprise platform for smarter asset tracking, allocation, booking, and maintenance.</p><div className="mt-5 flex gap-3">{[Share2,MessageCircle,Code2].map((I,i)=><a key={i} href="#" aria-label="Social link" className="rounded-lg bg-white/5 p-2 hover:bg-brand-500 hover:text-white"><I size={17}/></a>)}</div></div>
+  <div><h3 className="font-semibold text-white">Quick Links</h3><div className="mt-4 grid gap-3 text-sm"><a href="#features">Features</a><a href="#how-it-works">How It Works</a><a href="#benefits">Benefits</a><a href="/login">Login</a></div></div>
+  <div><h3 className="font-semibold text-white">Platform</h3><div className="mt-4 grid gap-3 text-sm"><span>Asset Tracking</span><span>Resource Booking</span><span>Maintenance</span><span>Reports & Analytics</span></div></div>
+  <div><h3 className="font-semibold text-white">Contact</h3><div className="mt-4 grid gap-4 text-sm"><span className="flex gap-3"><Mail size={17}/> support@assetflow.io</span><span className="flex gap-3"><Phone size={17}/> +91 1800 123 4567</span><span className="flex gap-3"><MapPin size={17}/> Bengaluru, India</span></div></div>
+  </div><div className="border-t border-white/10 py-6 text-center text-xs">© 2026 AssetFlow. All rights reserved.</div></footer>}

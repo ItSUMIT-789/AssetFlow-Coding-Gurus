@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-950: #071426;
+  --color-navy-900: #0b1c35;
+  --color-brand-500: #3563e9;
+  --color-brand-600: #264ed4;
+  --font-sans: "Inter", "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; background: #f8fafc; color: #172033; font-family: var(--font-sans); }
+button, input, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+.hero-grid { background-image: linear-gradient(rgba(53,99,233,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(53,99,233,.055) 1px,transparent 1px); background-size: 44px 44px; }
+.float-card { animation: float 5s ease-in-out infinite; }
+.float-card:nth-child(2) { animation-delay: -1.4s; }
+@keyframes float { 50% { transform: translateY(-7px); } }
+@media (prefers-reduced-motion: reduce) { *,::before,::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; } }

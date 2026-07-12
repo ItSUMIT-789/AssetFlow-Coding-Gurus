@@ -1,4 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+
+
 import {
   ArrowUpRight,
   BarChart3,
@@ -20,7 +25,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+
 import {
   Bar,
   BarChart,
@@ -30,7 +35,253 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+const seedDepartments = [
+  {
+    id: 1,
+    name: "Information Technology",
+    code: "IT",
+    head: "Rahul Mehta",
+    parent: "Corporate Operations",
+    employees: 68,
+    status: "Active",
+  },
+  {
+    id: 2,
+    name: "Human Resources",
+    code: "HR",
+    head: "Neha Kapoor",
+    parent: "Corporate Operations",
+    employees: 24,
+    status: "Active",
+  },
+  {
+    id: 3,
+    name: "Finance",
+    code: "FIN",
+    head: "Amit Kulkarni",
+    parent: "Executive Office",
+    employees: 31,
+    status: "Active",
+  },
+  {
+    id: 4,
+    name: "Operations",
+    code: "OPS",
+    head: "Priya Nair",
+    parent: "Executive Office",
+    employees: 92,
+    status: "Active",
+  },
+  {
+    id: 5,
+    name: "Sales",
+    code: "SAL",
+    head: "Vikram Shah",
+    parent: "Revenue Division",
+    employees: 57,
+    status: "Active",
+  },
+  {
+    id: 6,
+    name: "Marketing",
+    code: "MKT",
+    head: "Sneha Iyer",
+    parent: "Revenue Division",
+    employees: 29,
+    status: "Active",
+  },
+  {
+    id: 7,
+    name: "Administration",
+    code: "ADM",
+    head: "Rohan Deshmukh",
+    parent: "Corporate Operations",
+    employees: 36,
+    status: "Active",
+  },
+  {
+    id: 8,
+    name: "Research & Development",
+    code: "RND",
+    head: "Kavya Rao",
+    parent: "Product Division",
+    employees: 44,
+    status: "Inactive",
+  },
+  {
+    id: 9,
+    name: "Procurement",
+    code: "PRC",
+    head: "Arjun Malhotra",
+    parent: "Operations",
+    employees: 18,
+    status: "Active",
+  },
+  {
+    id: 10,
+    name: "Customer Success",
+    code: "CS",
+    head: "Meera Joshi",
+    parent: "Revenue Division",
+    employees: 41,
+    status: "Inactive",
+  },
+];
+const emptyForm = {
+  name: "",
+  code: "",
+  head: "",
+  parent: "",
+  status: "Active",
+};
 
+function DepartmentModal({ mode, department, onClose, onSave }) {
+  const [form, setForm] = useState(department || emptyForm);
+  const [error, setError] = useState("");
+  const readOnly = mode === "view";
+  const submit = (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.code.trim() || !form.head.trim()) {
+      setError("Department, code, and department head are required.");
+      return;
+    }
+    onSave(form);
+  };
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.form
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.98 }}
+        onSubmit={submit}
+        className="w-full max-w-xl overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+      >
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-brand-500">
+              Organization Setup
+            </p>
+            <h2 className="mt-1 text-xl font-extrabold text-navy-900 dark:text-white">
+              {mode === "add"
+                ? "Add Department"
+                : mode === "edit"
+                  ? "Edit Department"
+                  : "Department Details"}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid size-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Close modal"
+          >
+            <X size={19} />
+          </button>
+        </div>
+        <div className="grid gap-5 p-6 sm:grid-cols-2">
+          <Field
+            label="Department Name"
+            value={form.name}
+            disabled={readOnly}
+            onChange={(v) => setForm({ ...form, name: v })}
+            placeholder="e.g. Legal"
+          />
+          <Field
+            label="Department Code"
+            value={form.code}
+            disabled={readOnly}
+            onChange={(v) =>
+              setForm({ ...form, code: v.toUpperCase().slice(0, 6) })
+            }
+            placeholder="e.g. LEG"
+          />
+          <Field
+            label="Department Head"
+            value={form.head}
+            disabled={readOnly}
+            onChange={(v) => setForm({ ...form, head: v })}
+            placeholder="Select or enter head"
+          />
+          <Field
+            label="Parent Department"
+            value={form.parent}
+            disabled={readOnly}
+            onChange={(v) => setForm({ ...form, parent: v })}
+            placeholder="e.g. Corporate Operations"
+          />
+          <label className="block sm:col-span-2">
+            <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Status
+            </span>
+            <select
+              disabled={readOnly}
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:disabled:bg-slate-800"
+            >
+              <option>Active</option>
+              <option>Inactive</option>
+            </select>
+          </label>
+          {error && (
+            <p className="sm:col-span-2 text-sm font-medium text-red-500">
+              {error}
+            </p>
+          )}
+        </div>
+        <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50/70 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+          >
+            {readOnly ? "Close" : "Cancel"}
+          </button>
+          {!readOnly && (
+            <button className="rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-brand-600">
+              {mode === "add" ? "Add Department" : "Save Changes"}
+            </button>
+          )}
+        </div>
+      </motion.form>
+    </motion.div>
+  );
+}
+function Field({ label, value, onChange, placeholder, disabled }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+        {label}
+      </span>
+      <input
+        disabled={disabled}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:disabled:bg-slate-800"
+      />
+    </label>
+  );
+}
+
+function Action({ icon: Icon, label, onClick, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={`grid size-8 place-items-center rounded-lg transition ${danger ? "text-slate-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10" : "text-slate-400 hover:bg-blue-50 hover:text-brand-500 dark:hover:bg-blue-500/10"}`}
+    >
+      <Icon size={15} />
+    </button>
+  );
+}
 const initialDepartments = [
   { id: 1, name: 'Engineering', head: 'Nora Chen', parent: 'Technology', employees: 42, status: 'Active' },
   { id: 2, name: 'Finance', head: 'Jules Martin', parent: 'Corporate', employees: 18, status: 'Active' },
@@ -73,6 +324,8 @@ const statusStyles = {
   Active: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/20',
   Inactive: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/20',
 }
+
+
 
 export default function OrganizationSetup() {
   const [activeTab, setActiveTab] = useState('Departments')

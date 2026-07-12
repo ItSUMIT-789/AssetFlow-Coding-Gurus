@@ -1,6 +1,59 @@
-import { Eye, EyeOff } from 'lucide-react'
-import { useState } from 'react'
-export function FormError({children}){return children?<p className="mt-1.5 text-xs font-medium text-red-600">{children}</p>:null}
-export function InputField({label,error,icon:Icon,...props}){return <label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">{label}</span><span className="relative block">{Icon&&<Icon size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"/>}<input className={`w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 ${Icon?'pl-11':''} ${error?'border-red-400 focus:ring-red-100':'border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-blue-100'}`} {...props}/></span><FormError>{error}</FormError></label>}
-export function PasswordField(props){const [show,setShow]=useState(false);return <div className="relative"><InputField {...props} type={show?'text':'password'}/><button type="button" onClick={()=>setShow(!show)} aria-label={show?'Hide password':'Show password'} className="absolute right-3.5 top-[42px] text-slate-400 hover:text-brand-500">{show?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>}
-export function LoadingButton({loading,children,...props}){return <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-brand-600 disabled:opacity-70" {...props}>{loading&&<span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white"/>}{loading?'Please wait...':children}</button>}
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+export function FormError({ children }) {
+  return children ? (
+    <p className="mt-1.5 text-xs font-medium text-red-600">{children}</p>
+  ) : null;
+}
+export function InputField({ label, error, icon: Icon, ...props }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-700">
+        {label}
+      </span>
+      <span className="relative block">
+        {Icon && (
+          <Icon
+            size={18}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+        )}
+        <input
+          className={`w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 ${Icon ? "pl-11" : ""} ${error ? "border-red-400 focus:ring-red-100" : "border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-blue-100"}`}
+          {...props}
+        />
+      </span>
+      <FormError>{error}</FormError>
+    </label>
+  );
+}
+export function PasswordField(props) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <InputField {...props} type={show ? "text" : "password"} />
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        aria-label={show ? "Hide password" : "Show password"}
+        className="absolute right-3.5 top-[42px] text-slate-400 hover:text-brand-500"
+      >
+        {show ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+  );
+}
+export function LoadingButton({ loading, children, ...props }) {
+  return (
+    <button
+      disabled={loading}
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-brand-600 disabled:opacity-70"
+      {...props}
+    >
+      {loading && (
+        <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+      )}
+      {loading ? "Please wait..." : children}
+    </button>
+  );
+}

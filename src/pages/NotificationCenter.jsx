@@ -1,336 +1,435 @@
-import { useMemo, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
+  ArrowLeftRight,
+  Bell,
   BellRing,
-  BookOpen,
+  BookOpenCheck,
+  Check,
   CheckCheck,
-  Clock3,
-  FileCheck2,
+  ChevronRight,
+  ClipboardCheck,
   Filter,
-  Layers3,
   Search,
-  ShieldCheck,
+  ShieldAlert,
   Sparkles,
-  Truck,
   Wrench,
-} from 'lucide-react'
+} from "lucide-react";
+import DashboardSidebar from "../components/DashboardSidebar";
+import AdminTopbar from "../components/AdminTopbar";
+import {
+  getAll,
+  KEYS,
+  setAll,
+  update as storeUpdate,
+} from "../services/storageService";
 
-const seedNotifications = [
-  {
-    id: 1,
-    category: 'Maintenance',
-    title: 'HVAC service window approved',
-    description: 'The north wing maintenance pass is now active for tomorrow at 08:00.',
-    time: '12 min ago',
-    priority: 'High',
-    unread: true,
-    icon: Wrench,
-  },
-  {
-    id: 2,
-    category: 'Transfers',
-    title: 'Laptop transfer pending sign-off',
-    description: 'Engineering requested a handoff for 6 devices to the design team.',
-    time: '42 min ago',
-    priority: 'Medium',
-    unread: true,
-    icon: Truck,
-  },
-  {
-    id: 3,
-    category: 'Bookings',
-    title: 'Conference room suite reserved',
-    description: 'The executive review room is booked for the board refresh session.',
-    time: '1 hr ago',
-    priority: 'Low',
-    unread: false,
-    icon: BookOpen,
-  },
-  {
-    id: 4,
-    category: 'Audits',
-    title: 'Quarterly audit checklist updated',
-    description: 'New compliance items were added to the warehouse and lab review pack.',
-    time: '2 hrs ago',
-    priority: 'High',
-    unread: false,
-    icon: FileCheck2,
-  },
-  {
-    id: 5,
-    category: 'Notifications',
-    title: 'New deployment milestone reached',
-    description: 'Operations completed the asset onboarding wave with zero blockers.',
-    time: '3 hrs ago',
-    priority: 'Medium',
-    unread: true,
-    icon: BellRing,
-  },
-]
+const tabs = ["All", "Maintenance", "Transfers", "Bookings", "Audits"];
+const icons = {
+  Maintenance: Wrench,
+  Transfers: ArrowLeftRight,
+  Bookings: BookOpenCheck,
+  Audits: ClipboardCheck,
+};
+const tones = {
+  Maintenance: "bg-amber-50 text-amber-600 dark:bg-amber-500/10",
+  Transfers: "bg-violet-50 text-violet-600 dark:bg-violet-500/10",
+  Bookings: "bg-blue-50 text-blue-600 dark:bg-blue-500/10",
+  Audits: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10",
+};
+const priority = {
+  High: "bg-red-50 text-red-600 dark:bg-red-500/10",
+  Normal: "bg-blue-50 text-blue-600 dark:bg-blue-500/10",
+  Low: "bg-slate-100 text-slate-500 dark:bg-slate-800",
+};
 
-const tabs = ['All', 'Maintenance', 'Transfers', 'Bookings', 'Audits', 'Notifications']
+function Stat({ icon: Icon, label, value, tone, onClick }) {
+  return (
+    <motion.button
+      whileHover={{ y: -3 }}
+      onClick={onClick}
+      className="card flex items-center gap-4 p-4 text-left"
+    >
+      <span className={`grid size-11 place-items-center rounded-xl ${tone}`}>
+        <Icon size={20} />
+      </span>
+      <div>
+        <p className="text-xl font-extrabold text-navy-900 dark:text-white">
+          {value}
+        </p>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+          {label}
+        </p>
+      </div>
+    </motion.button>
+  );
+}
+function Item({ item, onRead }) {
+  const Icon = icons[item.type];
+  return (
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: 15 }}
+      whileHover={{ x: 3 }}
+      onClick={() => onRead(item.id)}
+      className={`group relative cursor-pointer rounded-2xl border p-4 transition sm:p-5 ${item.unread ? "border-blue-200 bg-gradient-to-r from-blue-50/80 via-white to-white shadow-md shadow-blue-500/5 dark:border-blue-900/60 dark:from-blue-950/25 dark:via-slate-900 dark:to-slate-900" : "border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/75"}`}
+    >
+      <div className="flex items-start gap-4">
+        <span
+          className={`grid size-11 shrink-0 place-items-center rounded-xl ${tones[item.type]}`}
+        >
+          <Icon size={19} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-extrabold text-navy-900 dark:text-white">
+                  {item.title}
+                </h3>
+                {item.unread && (
+                  <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[8px] font-bold text-white">
+                    UNREAD
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500 dark:text-slate-400">
+                {item.description}
+              </p>
+            </div>
+            <span
+              className={`h-fit w-fit shrink-0 rounded-full px-2.5 py-1 text-[9px] font-bold ${priority[item.priority]}`}
+            >
+              {item.priority}
+            </span>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[9px] font-semibold text-slate-400">
+            <span>{item.time}</span>
+            <span>{item.type}</span>
+            <span>{item.reference}</span>
+            <span>By {item.actor}</span>
+          </div>
+        </div>
+        <ChevronRight
+          className="mt-3 shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-brand-500"
+          size={17}
+        />
+      </div>
+      {item.unread && (
+        <span className="absolute -left-0.5 top-1/2 h-9 w-1 -translate-y-1/2 rounded-r bg-brand-500" />
+      )}
+    </motion.article>
+  );
+}
 
 export default function NotificationCenter() {
-  const [activeTab, setActiveTab] = useState('All')
-  const [query, setQuery] = useState('')
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false)
-  const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false)
-  const [notifications, setNotifications] = useState(seedNotifications)
-  const [darkMode, setDarkMode] = useState(false)
-
-  const filteredNotifications = useMemo(() => {
-    const searchValue = query.trim().toLowerCase()
-
-    return notifications.filter((item) => {
-      const matchesTab = activeTab === 'All' || item.category === activeTab
-      const matchesSearch =
-        searchValue === '' ||
-        [item.title, item.description, item.category, item.priority].join(' ').toLowerCase().includes(searchValue)
-      const matchesReadState = !showUnreadOnly || item.unread
-      const matchesPriority = !showHighPriorityOnly || item.priority === 'High'
-
-      return matchesTab && matchesSearch && matchesReadState && matchesPriority
-    })
-  }, [activeTab, notifications, query, showHighPriorityOnly, showUnreadOnly])
-
-  const unreadCount = notifications.filter((item) => item.unread).length
-  const highPriorityCount = notifications.filter((item) => item.priority === 'High').length
-
-  const markAllRead = () => {
-    setNotifications((current) => current.map((item) => ({ ...item, unread: false })))
-  }
-
-  const toggleRead = (id) => {
-    setNotifications((current) => current.map((item) => (item.id === id ? { ...item, unread: !item.unread } : item)))
-  }
-
+  const [collapsed, setCollapsed] = useState(false),
+    [mobileOpen, setMobileOpen] = useState(false),
+    [dark, setDark] = useState(
+      () => localStorage.getItem("assetflow_theme") === "dark",
+    );
+  const [items, setItems] = useState(() => {
+      const stored = getAll(KEYS.notifications);
+      return stored.map((item) => ({
+        ...item,
+        date:
+          new Date(item.time).toDateString() === new Date().toDateString()
+            ? "Today"
+            : "Earlier",
+        time: new Date(item.time).toLocaleString(),
+      }));
+    }),
+    [tab, setTab] = useState("All"),
+    [query, setQuery] = useState(""),
+    [filter, setFilter] = useState("All Notifications"),
+    [toast, setToast] = useState("");
+  const navigate = useNavigate();
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("assetflow_theme", dark ? "dark" : "light");
+    return () => document.documentElement.classList.remove("dark");
+  }, [dark]);
+  const unread = items.filter((x) => x.unread).length,
+    high = items.filter((x) => x.priority === "High").length;
+  const visible = useMemo(
+    () =>
+      items.filter(
+        (x) =>
+          (tab === "All" || x.type === tab) &&
+          (filter === "All Notifications" ||
+            (filter === "Unread" && x.unread) ||
+            (filter === "Read" && !x.unread) ||
+            (filter === "High Priority" && x.priority === "High")) &&
+          `${x.title} ${x.description} ${x.reference} ${x.actor}`
+            .toLowerCase()
+            .includes(query.toLowerCase()),
+      ),
+    [items, tab, filter, query],
+  );
+  const groups = ["Today", "Yesterday", "Earlier"]
+    .map((date) => [date, visible.filter((x) => x.date === date)])
+    .filter(([, rows]) => rows.length);
+  const read = (id) => {
+    try {
+      storeUpdate(KEYS.notifications, id, { unread: false });
+    } catch {
+      void 0;
+    }
+    setItems(items.map((x) => (x.id === id ? { ...x, unread: false } : x)));
+  };
+  const markAll = () => {
+    setAll(
+      KEYS.notifications,
+      getAll(KEYS.notifications).map((x) => ({ ...x, unread: false })),
+    );
+    setItems(items.map((x) => ({ ...x, unread: false })));
+    setToast("All notifications marked as read");
+    setTimeout(() => setToast(""), 2200);
+  };
+  const logout = () => {
+    localStorage.removeItem("assetflow_auth");
+    navigate("/login", { replace: true });
+  };
   return (
-    <div className={`min-h-screen transition-colors ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-[radial-gradient(circle_at_top_left,_rgba(53,99,233,0.16),_transparent_36%),linear-gradient(135deg,_#f8fbff_0%,_#eef4ff_100%)] text-slate-900'}`}>
-      <header className={`border-b backdrop-blur-xl ${darkMode ? 'border-white/10 bg-slate-900/80' : 'border-slate-200/70 bg-white/80'}`}>
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-10 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:py-14">
-          <div className="max-w-2xl">
-            <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold ${darkMode ? 'border-sky-400/20 bg-sky-500/10 text-sky-300' : 'border-sky-200 bg-sky-50 text-sky-700'}`}>
-              <BellRing size={15} /> Enterprise notification center
+    <div className="min-h-screen bg-slate-50 text-slate-700 dark:bg-slate-950 dark:text-slate-300">
+      <DashboardSidebar
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+        onLogout={logout}
+        activePage="Notifications"
+      />
+      <div
+        className="transition-[margin] duration-300 lg:ml-[var(--side)]"
+        style={{ "--side": collapsed ? "88px" : "256px" }}
+      >
+        <AdminTopbar
+          dark={dark}
+          setDark={setDark}
+          setMobileOpen={setMobileOpen}
+        />
+        <main className="mx-auto max-w-[1450px] p-4 sm:p-6 lg:p-8">
+          <header className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.15em] text-brand-500">
+                <BellRing size={15} /> Activity & Alerts
+              </p>
+              <h1 className="mt-2 text-3xl font-extrabold text-navy-900 dark:text-white">
+                Notification Center
+              </h1>
+              <p className="mt-2 text-sm text-slate-400">
+                Stay informed about maintenance, transfers, bookings, audits,
+                and workflow decisions.
+              </p>
             </div>
-            <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">Keep every operational update in one premium command view.</h1>
-            <p className={`mt-4 text-lg leading-8 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              Follow maintenance, transfers, bookings, and audits through a polished, workflow-first timeline designed for modern teams.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className={`rounded-full border px-3 py-2 text-sm font-semibold ${darkMode ? 'border-white/10 bg-white/10 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-              24 live workflows
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setDarkMode((value) => !value)}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${darkMode ? 'border-white/10 bg-white/10 text-white hover:bg-white/20' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+            <button
+              disabled={!unread}
+              onClick={markAll}
+              className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-brand-500 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 dark:border-blue-900 dark:bg-blue-950/25"
             >
-              {darkMode ? 'Light mode' : 'Dark mode'}
-            </motion.button>
+              <CheckCheck size={17} /> Mark All Read
+            </button>
+          </header>
+          <div className="mt-7 grid gap-4 sm:grid-cols-3">
+            <Stat
+              icon={Bell}
+              label="Total Notifications"
+              value={items.length}
+              tone="bg-blue-50 text-blue-600 dark:bg-blue-500/10"
+              onClick={() => {
+                setFilter("All Notifications");
+                setTab("All");
+              }}
+            />
+            <Stat
+              icon={BellRing}
+              label="Unread"
+              value={unread}
+              tone="bg-violet-50 text-violet-600 dark:bg-violet-500/10"
+              onClick={() => setFilter("Unread")}
+            />
+            <Stat
+              icon={ShieldAlert}
+              label="High Priority"
+              value={high}
+              tone="bg-red-50 text-red-600 dark:bg-red-500/10"
+              onClick={() => setFilter("High Priority")}
+            />
           </div>
-        </div>
-
-        <div className="mx-auto grid max-w-7xl gap-3 px-5 pb-8 sm:px-6 lg:grid-cols-3 lg:px-8">
-          {[
-            { label: 'Critical actions', value: '3', tone: darkMode ? 'text-amber-300' : 'text-amber-600' },
-            { label: 'Unread updates', value: unreadCount.toString(), tone: darkMode ? 'text-sky-300' : 'text-sky-600' },
-            { label: 'Automation health', value: '98%', tone: darkMode ? 'text-emerald-300' : 'text-emerald-600' },
-          ].map((item) => (
-            <div key={item.label} className={`rounded-[24px] border p-4 ${darkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200 bg-white/80 shadow-sm'}`}>
-              <p className={`text-2xl font-semibold ${item.tone}`}>{item.value}</p>
-              <p className={`mt-1 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</p>
+          <section className="card mt-6 overflow-hidden">
+            <div className="dashboard-scroll flex gap-1 overflow-x-auto border-b px-4 pt-3 dark:border-slate-800">
+              {tabs.map((x) => {
+                const count =
+                  x === "All"
+                    ? items.length
+                    : items.filter((n) => n.type === x).length;
+                return (
+                  <button
+                    key={x}
+                    onClick={() => setTab(x)}
+                    className={`relative flex items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-semibold ${tab === x ? "text-brand-500" : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
+                  >
+                    {x}
+                    <span
+                      className={`grid min-w-5 place-items-center rounded-full px-1.5 py-0.5 text-[9px] ${tab === x ? "bg-blue-100 text-brand-500 dark:bg-blue-500/10" : "bg-slate-100 dark:bg-slate-800"}`}
+                    >
+                      {count}
+                    </span>
+                    {tab === x && (
+                      <motion.span
+                        layoutId="notification-tab"
+                        className="absolute inset-x-2 bottom-0 h-0.5 bg-brand-500"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-          <div className={`rounded-[30px] border p-4 shadow-sm backdrop-blur ${darkMode ? 'border-white/10 bg-slate-900/70 shadow-slate-950/30' : 'border-slate-200/70 bg-white/85 shadow-slate-200/60'}`}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Search notifications</p>
-                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Filter by workflow, urgency, or read state.</p>
-              </div>
-              <label className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 text-sm shadow-inner md:min-w-[320px] ${darkMode ? 'border-white/10 bg-slate-950/70 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                <Search size={16} />
+            <div className="flex flex-col gap-3 p-4 lg:flex-row">
+              <div className="relative flex-1">
+                <Search
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={17}
+                />
                 <input
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search notifications"
-                  className={`w-full border-none bg-transparent outline-none placeholder:text-slate-400 ${darkMode ? 'text-white' : 'text-slate-900'}`}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search notifications, references, or people..."
+                  className="field pl-11"
                 />
+              </div>
+              <label className="relative">
+                <Filter
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={15}
+                />
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="field pl-10 lg:w-48"
+                >
+                  <option>All Notifications</option>
+                  <option>Unread</option>
+                  <option>Read</option>
+                  <option>High Priority</option>
+                </select>
               </label>
             </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${activeTab === tab ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : darkMode ? 'bg-white/10 text-slate-300 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                >
-                  {tab}
-                </button>
+          </section>
+          <div className="mt-6 grid items-start gap-6 xl:grid-cols-[1fr_290px]">
+            <section>
+              {groups.map(([date, rows]) => (
+                <div key={date} className="mb-7">
+                  <div className="mb-3 flex items-center gap-3">
+                    <h2 className="text-xs font-extrabold uppercase tracking-[.14em] text-slate-400">
+                      {date}
+                    </h2>
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+                    <span className="text-[9px] font-bold text-slate-400">
+                      {rows.length}
+                    </span>
+                  </div>
+                  <div className="relative space-y-3">
+                    <AnimatePresence mode="popLayout">
+                      {rows.map((item) => (
+                        <Item key={item.id} item={item} onRead={read} />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
               ))}
-            </div>
-          </div>
-
-          <div className={`rounded-[30px] border p-5 shadow-xl backdrop-blur ${darkMode ? 'border-white/10 bg-slate-900/80 shadow-slate-950/30' : 'border-slate-200/70 bg-slate-950 text-white shadow-slate-950/10'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-sky-300">Operational pulse</p>
-                <p className={`mt-1 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-300'}`}>Today’s unseen activity.</p>
-              </div>
-              <div className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">+8.2%</div>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <div className={`rounded-2xl border p-3 ${darkMode ? 'border-white/10 bg-white/5' : 'border-white/10 bg-white/10'}`}>
-                <p className="text-2xl font-semibold text-sky-300">{unreadCount}</p>
-                <p className="mt-1 text-sm text-slate-400">Unread updates</p>
-              </div>
-              <div className={`rounded-2xl border p-3 ${darkMode ? 'border-white/10 bg-white/5' : 'border-white/10 bg-white/10'}`}>
-                <p className="text-2xl font-semibold text-amber-300">{highPriorityCount}</p>
-                <p className="mt-1 text-sm text-slate-400">High priority</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className={`rounded-[30px] border p-4 shadow-sm backdrop-blur ${darkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200/70 bg-white/85'}`}>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className={`text-sm font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Timeline feed</p>
-                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>A stream of enterprise actions and decisions.</p>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setShowUnreadOnly((value) => !value)}
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition ${showUnreadOnly ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : darkMode ? 'bg-white/10 text-slate-300 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                >
-                  <Filter size={14} /> {showUnreadOnly ? 'Unread only' : 'All reads'}
-                </button>
-                <button
-                  onClick={() => setShowHighPriorityOnly((value) => !value)}
-                  className={`rounded-full px-3 py-2 text-sm font-semibold transition ${showHighPriorityOnly ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : darkMode ? 'bg-white/10 text-slate-300 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                >
-                  {showHighPriorityOnly ? 'High priority' : 'Any priority'}
-                </button>
-                <button
-                  onClick={markAllRead}
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition ${darkMode ? 'bg-white/10 text-slate-200 hover:bg-white/20' : 'bg-slate-900 text-white hover:bg-slate-700'}`}
-                >
-                  <CheckCheck size={15} /> Mark all read
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <AnimatePresence mode="popLayout">
-                {filteredNotifications.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <motion.article
-                      key={item.id}
-                      layout
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      whileHover={{ y: -3, scale: 1.01 }}
-                      className={`group relative overflow-hidden rounded-[24px] border p-4 shadow-sm transition ${darkMode ? 'border-white/10 bg-slate-950/70 hover:border-sky-400/20' : 'border-slate-200 bg-slate-50/80 hover:border-sky-200'}`}
-                    >
-                      <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${item.priority === 'High' ? 'from-amber-500 to-orange-500' : item.priority === 'Medium' ? 'from-sky-500 to-violet-500' : 'from-emerald-500 to-cyan-500'}`} />
-                      <div className="absolute left-4 top-5 h-[calc(100%-2rem)] w-px bg-slate-200 dark:bg-white/10" />
-                      <div className={`absolute left-[13px] top-5 size-2.5 rounded-full ${item.unread ? 'bg-brand-600 shadow-[0_0_0_4px_rgba(53,99,233,0.16)]' : 'bg-slate-400'}`} />
-
-                      <div className="ml-7 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className={`rounded-2xl p-2.5 shadow-sm ${darkMode ? 'bg-white/10 text-sky-300' : 'bg-white text-sky-600'}`}>
-                            <Icon size={18} />
-                          </div>
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{item.title}</h3>
-                              {item.unread && <span className="rounded-full bg-brand-600/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-600">Unread</span>}
-                            </div>
-                            <p className={`mt-1 text-sm leading-7 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{item.description}</p>
-                            <div className={`mt-2 flex flex-wrap items-center gap-2 text-sm ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium ${darkMode ? 'bg-white/10 text-slate-300' : 'bg-white text-slate-700'}`}>
-                                <Layers3 size={13} /> {item.category}
-                              </span>
-                              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium ${darkMode ? 'bg-white/10 text-slate-300' : 'bg-white text-slate-700'}`}>
-                                <Clock3 size={13} /> {item.time}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.priority === 'High' ? 'bg-amber-500/10 text-amber-500' : item.priority === 'Medium' ? 'bg-sky-500/10 text-sky-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                            {item.priority}
-                          </span>
-                          <button
-                            onClick={() => toggleRead(item.id)}
-                            className={`rounded-full px-3 py-2 text-sm font-semibold transition ${darkMode ? 'bg-white/10 text-slate-200 hover:bg-white/20' : 'bg-white text-slate-700 hover:bg-slate-100'}`}
-                          >
-                            {item.unread ? 'Mark read' : 'Mark unread'}
-                          </button>
-                        </div>
-                      </div>
-                    </motion.article>
-                  )
-                })}
-              </AnimatePresence>
-
-              {filteredNotifications.length === 0 && (
-                <div className={`rounded-[24px] border border-dashed p-8 text-center ${darkMode ? 'border-white/10 bg-slate-950/60 text-slate-400' : 'border-slate-300 bg-slate-50/80 text-slate-600'}`}>
-                  <p className="text-lg font-semibold">No notifications match these filters.</p>
-                  <p className="mt-2 text-sm">Try widening the search or switching the workflow tab.</p>
+              {!visible.length && (
+                <div className="card grid min-h-80 place-items-center text-center">
+                  <div>
+                    <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-blue-50 text-brand-500 dark:bg-blue-500/10">
+                      <Check size={24} />
+                    </span>
+                    <h2 className="mt-4 font-extrabold text-navy-900 dark:text-white">
+                      You’re all caught up
+                    </h2>
+                    <p className="mt-2 text-xs text-slate-400">
+                      No notifications match the selected view.
+                    </p>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
-
-          <aside className="space-y-4">
-            <div className={`rounded-[28px] border p-5 shadow-sm backdrop-blur ${darkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200/70 bg-white/85'}`}>
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <ShieldCheck size={16} className="text-emerald-500" /> Priority handling
-              </div>
-              <p className={`mt-3 text-sm leading-7 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                High urgency items surface instantly so teams can respond before small issues become operational delays.
-              </p>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-                <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-emerald-500 to-sky-500" />
-              </div>
-              <p className={`mt-2 text-xs font-semibold uppercase tracking-[0.2em] ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>78% of tasks are on track</p>
-            </div>
-
-            <div className={`rounded-[28px] border p-5 shadow-sm backdrop-blur ${darkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200/70 bg-white/85'}`}>
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <AlertTriangle size={16} className="text-amber-500" /> Workflow attention
-              </div>
-              <div className="mt-4 space-y-3 text-sm">
-                {[
-                  { label: 'Maintenance', value: '2 action items' },
-                  { label: 'Transfers', value: '1 pending batch' },
-                  { label: 'Audits', value: '3 completed' },
-                ].map((item) => (
-                  <div key={item.label} className={`flex items-center justify-between rounded-2xl px-3 py-2 ${darkMode ? 'bg-white/5 text-slate-300' : 'bg-slate-50 text-slate-700'}`}>
-                    <span>{item.label}</span>
-                    <span className="font-semibold">{item.value}</span>
+            </section>
+            <aside className="grid gap-5">
+              <section className="card overflow-hidden">
+                <div className="bg-gradient-to-br from-navy-950 to-indigo-950 p-5 text-white">
+                  <Sparkles className="text-blue-300" size={20} />
+                  <h2 className="mt-4 font-extrabold">Smart Inbox</h2>
+                  <p className="mt-2 text-xs leading-5 text-slate-300">
+                    AssetFlow prioritizes operational risks so important actions
+                    surface first.
+                  </p>
+                </div>
+                <div className="space-y-3 p-4 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Maintenance alerts</span>
+                    <b>
+                      {items.filter((x) => x.type === "Maintenance").length}
+                    </b>
                   </div>
-                ))}
-              </div>
-            </div>
-          </aside>
-        </section>
-      </main>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Approval requests</span>
+                    <b>
+                      {
+                        items.filter((x) => x.type === "Transfers" && x.unread)
+                          .length
+                      }
+                    </b>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Audit exceptions</span>
+                    <b>
+                      {
+                        items.filter(
+                          (x) => x.type === "Audits" && x.priority === "High",
+                        ).length
+                      }
+                    </b>
+                  </div>
+                </div>
+              </section>
+              <section className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-5 dark:border-amber-900/50 dark:from-amber-950/25 dark:to-orange-950/20">
+                <AlertTriangle className="text-amber-600" size={20} />
+                <h3 className="mt-3 text-sm font-bold text-amber-900 dark:text-amber-300">
+                  {high} priority items
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-amber-700 dark:text-amber-400">
+                  Review critical maintenance, transfer approvals, and audit
+                  discrepancies promptly.
+                </p>
+                <button
+                  onClick={() => setFilter("High Priority")}
+                  className="mt-4 text-xs font-bold text-amber-700 dark:text-amber-300"
+                >
+                  Review now →
+                </button>
+              </section>
+            </aside>
+          </div>
+        </main>
+      </div>
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="fixed bottom-5 right-5 z-[80] flex items-center gap-3 rounded-xl bg-navy-950 px-5 py-3 text-sm font-semibold text-white shadow-2xl"
+          >
+            <CheckCheck size={17} className="text-emerald-400" />
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
-  )
+  );
 }

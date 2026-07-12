@@ -1,3 +1,42 @@
-export const emailPattern=/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-export function validateLogin(v){const e={};if(!v.email.trim())e.email='Email is required';else if(!emailPattern.test(v.email))e.email='Enter a valid email address';if(!v.password)e.password='Password is required';else if(v.password.length<6)e.password='Password must contain at least 6 characters';return e}
-export function validateRegister(v){const e={};['fullName','employeeId','email','contact','department','designation','password','confirmPassword'].forEach(k=>{if(!v[k]?.trim())e[k]='This field is required'});if(v.email&& !emailPattern.test(v.email))e.email='Enter a valid email address';if(v.contact&&!/^\d{10}$/.test(v.contact))e.contact='Enter a valid 10-digit contact number';if(v.password&&!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(v.password))e.password='Use 8+ characters with uppercase, lowercase, number, and special character';if(v.confirmPassword&&v.password!==v.confirmPassword)e.confirmPassword='Passwords do not match';if(!v.terms)e.terms='You must accept the Terms and Conditions';return e}
+export const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function validateLogin(v) {
+  const e = {};
+  if (!v.email.trim()) e.email = "Email is required";
+  else if (!emailPattern.test(v.email)) e.email = "Enter a valid email address";
+  if (!v.password) e.password = "Password is required";
+  else if (v.password.length < 6)
+    e.password = "Password must contain at least 6 characters";
+  return e;
+}
+export function validateRegister(v) {
+  const e = {};
+  [
+    "fullName",
+    "employeeId",
+    "email",
+    "contact",
+    "department",
+    "designation",
+    "role",
+    "password",
+    "confirmPassword",
+  ].forEach((k) => {
+    if (!v[k]?.trim()) e[k] = "This field is required";
+  });
+  if (!["ASSET_MANAGER", "DEPARTMENT_HEAD", "EMPLOYEE"].includes(v.role))
+    e.role = "Select a valid registration role";
+  if (v.email && !emailPattern.test(v.email))
+    e.email = "Enter a valid email address";
+  if (v.contact && !/^\d{10}$/.test(v.contact))
+    e.contact = "Enter a valid 10-digit contact number";
+  if (
+    v.password &&
+    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(v.password)
+  )
+    e.password =
+      "Use 8+ characters with uppercase, lowercase, number, and special character";
+  if (v.confirmPassword && v.password !== v.confirmPassword)
+    e.confirmPassword = "Passwords do not match";
+  if (!v.terms) e.terms = "You must accept the Terms and Conditions";
+  return e;
+}

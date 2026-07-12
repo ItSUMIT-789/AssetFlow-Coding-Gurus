@@ -1,76 +1,217 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { BadgeCheck, BriefcaseBusiness, Building2, IdCard, Mail, Phone, UserRound } from 'lucide-react'
-import AuthLayout from '../components/AuthLayout'
-import { InputField, LoadingButton, PasswordField, FormError } from '../components/FormFields'
-import { validateRegister } from '../utils/validation'
-
-const initial = { fullName: '', employeeId: '', email: '', contact: '', department: '', designation: '', password: '', confirmPassword: '', terms: false }
-
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  BadgeCheck,
+  BriefcaseBusiness,
+  IdCard,
+  Mail,
+  Phone,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+import AuthLayout from "../components/AuthLayout";
+import {
+  InputField,
+  LoadingButton,
+  PasswordField,
+  FormError,
+} from "../components/FormFields";
+import { validateRegister } from "../utils/validation";
+import { registerUser } from "../utils/auth";
+import { REGISTRATION_ROLES } from "../utils/rbac";
+const initial = {
+  fullName: "",
+  employeeId: "",
+  email: "",
+  contact: "",
+  department: "",
+  designation: "",
+  role: "EMPLOYEE",
+  password: "",
+  confirmPassword: "",
+  terms: false,
+};
 export default function Register() {
-  const [form, setForm] = useState(initial)
-  const [errors, setErrors] = useState({})
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const navigate = useNavigate()
-
-  const update = (event) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value
+  const [form, setForm] = useState(initial),
+    [errors, setErrors] = useState({}),
+    [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const update = (e) => {
+    const v = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     setForm({
       ...form,
-      [event.target.name]: event.target.name === 'contact' ? value.replace(/\D/g, '').slice(0, 10) : value,
-    })
-  }
-
-  const submit = (event) => {
-    event.preventDefault()
-    const next = validateRegister(form)
-    setErrors(next)
-
-    if (Object.keys(next).length) {
-      return
-    }
-
-    setLoading(true)
+      [e.target.name]:
+        e.target.name === "contact" ? v.replace(/\D/g, "").slice(0, 10) : v,
+    });
+  };
+  const submit = (e) => {
+    e.preventDefault();
+    const next = validateRegister(form);
+    setErrors(next);
+    if (Object.keys(next).length) return;
+    setLoading(true);
     setTimeout(() => {
-      localStorage.setItem('assetflow_user', JSON.stringify({ ...form, password: undefined, confirmPassword: undefined, role: 'EMPLOYEE' }))
-      setLoading(false)
-      setSuccess(true)
-      setTimeout(() => navigate('/login'), 1300)
-    }, 800)
-  }
-
-  return <AuthLayout title="Join AssetFlow" message="Create your employee account and connect to a smarter, more transparent asset management experience.">
-    <form onSubmit={submit} className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-[0_24px_70px_rgba(15,23,42,.10)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5 sm:p-9">
-      <p className="text-sm font-bold uppercase tracking-[.2em] text-sky-600 dark:text-sky-300">Employee registration</p>
-      <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Create your account</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-300">Enter your organization details below.</p>
-      <div className="mt-6 flex gap-3 rounded-2xl border border-sky-200/70 bg-sky-50/80 p-3.5 text-xs leading-5 text-sky-900 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-100">
-        <BadgeCheck className="shrink-0 text-sky-500" size={19} />
-        <span>All new accounts are created as <b>Employee accounts</b>. Higher-level roles are assigned by an administrator.</span>
-      </div>
-      {success && <div className="mt-5 rounded-2xl bg-emerald-500/10 p-4 text-sm font-semibold text-emerald-700 dark:text-emerald-200">Account created successfully. Redirecting to login…</div>}
-      <div className="mt-7 grid gap-5 sm:grid-cols-2">
-        <InputField label="Full Name" name="fullName" value={form.fullName} onChange={update} error={errors.fullName} icon={UserRound} placeholder="Your full name" />
-        <InputField label="Employee ID" name="employeeId" value={form.employeeId} onChange={update} error={errors.employeeId} icon={IdCard} placeholder="EMP-1024" />
-        <InputField label="Email address" name="email" value={form.email} onChange={update} error={errors.email} icon={Mail} placeholder="name@company.com" autoComplete="email" />
-        <InputField label="Contact number" name="contact" value={form.contact} onChange={update} error={errors.contact} icon={Phone} placeholder="10-digit number" />
-        <InputField label="Department" name="department" value={form.department} onChange={update} error={errors.department} icon={Building2} placeholder="Operations" />
-        <InputField label="Designation" name="designation" value={form.designation} onChange={update} error={errors.designation} icon={BriefcaseBusiness} placeholder="Team member" />
-      </div>
-      <div className="mt-5 grid gap-5 sm:grid-cols-2">
-        <PasswordField label="Password" name="password" value={form.password} onChange={update} error={errors.password} placeholder="Create a password" />
-        <PasswordField label="Confirm Password" name="confirmPassword" value={form.confirmPassword} onChange={update} error={errors.confirmPassword} placeholder="Repeat password" />
-      </div>
-      <label className="mt-5 flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
-        <input type="checkbox" name="terms" checked={form.terms} onChange={update} className="mt-1 accent-brand-500" />
-        <span>I confirm that the information provided is accurate and I understand that access is role-based.</span>
-      </label>
-      {errors.terms ? <FormError message={errors.terms} /> : null}
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <LoadingButton loading={loading}>Create account</LoadingButton>
-        <Link to="/login" className="rounded-2xl border border-slate-200/80 bg-white/85 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-sky-200 hover:text-sky-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">Back to login</Link>
-      </div>
-    </form>
-  </AuthLayout>
+      try {
+        registerUser({
+          name: form.fullName,
+          email: form.email.toLowerCase(),
+          password: form.password,
+          role: form.role,
+          department: form.department,
+          designation: form.designation,
+          employeeId: form.employeeId,
+          phone: form.contact,
+        });
+        navigate("/login", { replace: true, state: { registered: true } });
+      } catch (error) {
+        setErrors({ form: error.message });
+        setLoading(false);
+      }
+    }, 500);
+  };
+  return (
+    <AuthLayout
+      title="Join AssetFlow"
+      message="Create an organization account with access governed by your operational role."
+    >
+      <form
+        onSubmit={submit}
+        className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-9"
+      >
+        <p className="text-sm font-bold text-brand-500">ACCOUNT REGISTRATION</p>
+        <h2 className="mt-2 text-3xl font-extrabold text-navy-900">
+          Create your account
+        </h2>
+        <div className="mt-6 flex gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-xs text-blue-900">
+          <BadgeCheck size={19} />
+          <span>
+            Administrator is predefined and cannot be selected during
+            registration.
+          </span>
+        </div>
+        {errors.form && (
+          <div className="mt-5 rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-600">
+            {errors.form}
+          </div>
+        )}
+        <div className="mt-7 grid gap-5 sm:grid-cols-2">
+          <InputField
+            label="Full Name"
+            name="fullName"
+            value={form.fullName}
+            onChange={update}
+            error={errors.fullName}
+            icon={UserRound}
+          />
+          <InputField
+            label="Employee ID"
+            name="employeeId"
+            value={form.employeeId}
+            onChange={update}
+            error={errors.employeeId}
+            icon={IdCard}
+          />
+          <InputField
+            label="Email Address"
+            name="email"
+            value={form.email}
+            onChange={update}
+            error={errors.email}
+            icon={Mail}
+          />
+          <InputField
+            label="Contact Number"
+            name="contact"
+            value={form.contact}
+            onChange={update}
+            error={errors.contact}
+            icon={Phone}
+          />
+          <label>
+            <span className="mb-2 block text-sm font-semibold">Department</span>
+            <select
+              name="department"
+              value={form.department}
+              onChange={update}
+              className="field"
+            >
+              <option value="">Select department</option>
+              {[
+                "Information Technology",
+                "Human Resources",
+                "Finance",
+                "Operations",
+                "Sales",
+                "Marketing",
+                "Administration",
+                "Other",
+              ].map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+            <FormError>{errors.department}</FormError>
+          </label>
+          <InputField
+            label="Designation"
+            name="designation"
+            value={form.designation}
+            onChange={update}
+            error={errors.designation}
+            icon={BriefcaseBusiness}
+          />
+          <label className="sm:col-span-2">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold">
+              <ShieldCheck size={16} /> Account Role
+            </span>
+            <select
+              name="role"
+              value={form.role}
+              onChange={update}
+              className="field"
+            >
+              {REGISTRATION_ROLES.map((x) => (
+                <option key={x.value} value={x.value}>
+                  {x.label}
+                </option>
+              ))}
+            </select>
+            <FormError>{errors.role}</FormError>
+          </label>
+          <PasswordField
+            label="Password"
+            name="password"
+            value={form.password}
+            onChange={update}
+            error={errors.password}
+          />
+          <PasswordField
+            label="Confirm Password"
+            name="confirmPassword"
+            value={form.confirmPassword}
+            onChange={update}
+            error={errors.confirmPassword}
+          />
+        </div>
+        <label className="mt-5 flex gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="terms"
+            checked={form.terms}
+            onChange={update}
+          />{" "}
+          I agree to the Terms and Conditions.
+        </label>
+        <FormError>{errors.terms}</FormError>
+        <div className="mt-6">
+          <LoadingButton loading={loading}>Create Account</LoadingButton>
+        </div>
+        <p className="mt-6 text-center text-sm">
+          Already registered?{" "}
+          <Link to="/login" className="font-bold text-brand-500">
+            Login
+          </Link>
+        </p>
+      </form>
+    </AuthLayout>
+  );
 }

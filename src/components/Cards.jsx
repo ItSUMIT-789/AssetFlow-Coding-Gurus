@@ -1,26 +1,32 @@
 export function FeatureCard({ icon: Icon, title, description }) {
-	return <article className="group rounded-3xl border border-white/70 bg-white/80 p-6 shadow-[0_18px_45px_rgba(15,23,42,.08)] backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:border-sky-200/80 dark:border-white/10 dark:bg-white/5">
-		<span className="grid size-11 place-items-center rounded-2xl bg-sky-500/10 text-sky-600 transition group-hover:bg-sky-500 group-hover:text-white dark:bg-sky-400/10 dark:text-sky-200">
-			<Icon size={21} />
-		</span>
-		<h3 className="mt-5 text-lg font-bold tracking-tight text-slate-950 dark:text-white">{title}</h3>
-		<p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-300">{description}</p>
-	</article>
+  return (
+    <article className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
+      <span className="grid size-11 place-items-center rounded-xl bg-blue-50 text-brand-500 group-hover:bg-brand-500 group-hover:text-white">
+        <Icon size={21} />
+      </span>
+      <h3 className="mt-5 font-bold text-navy-900">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
+    </article>
+  );
 }
-
 export function StatisticCard({ value, label }) {
-	return <article className="rounded-3xl border border-white/70 bg-white/80 p-6 text-center shadow-[0_18px_45px_rgba(15,23,42,.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/55">
-		<strong className="bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-3xl font-black text-transparent">{value}</strong>
-		<p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-300">{label}</p>
-	</article>
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+      <strong className="text-3xl font-extrabold text-brand-500">
+        {value}
+      </strong>
+      <p className="mt-2 text-sm font-medium text-slate-500">{label}</p>
+    </article>
+  );
 }
-
 export function RoleCard({ icon: Icon, title, description }) {
-	return <article className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-[0_18px_45px_rgba(15,23,42,.08)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-		<span className="grid size-11 place-items-center rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-200">
-			<Icon size={21} />
-		</span>
-		<h3 className="mt-4 text-lg font-bold tracking-tight text-slate-950 dark:text-white">{title}</h3>
-		<p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-300">{description}</p>
-	</article>
+  return (
+    <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <span className="grid size-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
+        <Icon size={21} />
+      </span>
+      <h3 className="mt-4 font-bold text-navy-900">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
+    </article>
+  );
 }

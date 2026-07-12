@@ -1,32 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import {
-  Activity,
-  AlertTriangle,
-  ArrowDownRight,
-  ArrowUpRight,
-  Bell,
-  BookOpen,
-  BookMarked,
-  CalendarDays,
-  ChevronLeft,
-  Clock3,
-  Construction,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  MoonStar,
-  PackageSearch,
-  Plus,
-  RefreshCw,
-  Search,
-  Settings2,
-  SunMedium,
-  TimerReset,
-  TriangleAlert,
-  Users,
-  Wrench,
-} from 'lucide-react'
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Area,
   AreaChart,
@@ -38,436 +12,606 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts'
-import { useNavigate } from 'react-router-dom'
-import { useAssetFlow } from '../hooks/useAssetFlow'
+} from "recharts";
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Bell,
+  CalendarDays,
+  ChevronDown,
+  ClipboardPlus,
+  Clock3,
+  Menu,
+  Moon,
+  Plus,
+  Search,
+  Sun,
+  UserPlus,
+  Wrench,
+} from "lucide-react";
+import DashboardSidebar from "../components/DashboardSidebar";
+import {
+  activities,
+  chartData,
+  kpis as kpiDefinitions,
+  maintenance,
+  notifications,
+  utilization,
+} from "../data/dashboardData";
+import {
+  calculateDashboardStats,
+  getAll,
+  KEYS,
+} from "../services/storageService";
 
-const quickActions = [
-  { label: 'Register Asset', icon: Plus },
-  { label: 'Book Resource', icon: BookOpen },
-  { label: 'Raise Maintenance Request', icon: Wrench },
-]
-
-const sidebarLinks = [
-  { label: 'Overview', icon: LayoutDashboard, active: true },
-  { label: 'Assets', icon: PackageSearch },
-  { label: 'Bookings', icon: BookOpen },
-  { label: 'Transfers', icon: RefreshCw },
-  { label: 'Maintenance', icon: Construction },
-  { label: 'Audit Trail', icon: Activity },
-  { label: 'Settings', icon: Settings2 },
-]
-
-const transitions = { type: 'spring', stiffness: 220, damping: 22 }
-
-function toneStyles(tone, dark) {
-  const map = {
-    blue: dark ? 'from-cyan-500/25 to-blue-500/10 text-cyan-200' : 'from-blue-500/15 to-indigo-500/10 text-blue-600',
-    indigo: dark ? 'from-indigo-500/25 to-fuchsia-500/10 text-indigo-200' : 'from-indigo-500/15 to-violet-500/10 text-indigo-600',
-    emerald: dark ? 'from-emerald-500/25 to-teal-500/10 text-emerald-200' : 'from-emerald-500/15 to-teal-500/10 text-emerald-600',
-    cyan: dark ? 'from-cyan-500/25 to-sky-500/10 text-cyan-200' : 'from-cyan-500/15 to-sky-500/10 text-cyan-600',
-    amber: dark ? 'from-amber-500/25 to-orange-500/10 text-amber-200' : 'from-amber-500/15 to-orange-500/10 text-amber-600',
-    rose: dark ? 'from-rose-500/25 to-pink-500/10 text-rose-200' : 'from-rose-500/15 to-pink-500/10 text-rose-600',
-  }
-
-  return map[tone] ?? map.blue
-}
-
-function Panel({ children, className = '' }) {
-  return <section className={`rounded-3xl border border-white/60 bg-white/75 p-5 shadow-[0_20px_60px_rgba(15,23,42,.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/50 ${className}`}>{children}</section>
-}
-
-function SectionHeading({ eyebrow, title, copy }) {
-  return (
-    <div className="mb-5 flex items-end justify-between gap-4">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[.24em] text-sky-600 dark:text-sky-300">{eyebrow}</p>
-        <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">{title}</h2>
-      </div>
-      {copy ? <p className="max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">{copy}</p> : null}
+const tone = {
+  blue: "bg-blue-50 text-blue-600 dark:bg-blue-500/10",
+  indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10",
+  emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10",
+  violet: "bg-violet-50 text-violet-600 dark:bg-violet-500/10",
+  amber: "bg-amber-50 text-amber-600 dark:bg-amber-500/10",
+  cyan: "bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10",
+};
+const Card = ({ children, className = "" }) => (
+  <section
+    className={`rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80 ${className}`}
+  >
+    {children}
+  </section>
+);
+const Header = ({ title, subtitle, action }) => (
+  <div className="flex items-start justify-between gap-3 px-5 pt-5">
+    <div>
+      <h2 className="font-bold text-navy-900 dark:text-white">{title}</h2>
+      {subtitle && <p className="mt-1 text-xs text-slate-400">{subtitle}</p>}
     </div>
-  )
-}
+    {action}
+  </div>
+);
+const tooltipStyle = {
+  borderRadius: 12,
+  border: "1px solid #e2e8f0",
+  boxShadow: "0 10px 30px rgba(15,23,42,.1)",
+  fontSize: 12,
+};
 
-function KpiCard({ item, dark }) {
-  const Icon = item.icon
-
+function Topbar({ dark, setDark, setMobileOpen }) {
   return (
-    <motion.article whileHover={{ y: -5 }} transition={transitions} className="group rounded-3xl border border-white/70 bg-white/80 p-5 shadow-[0_16px_40px_rgba(15,23,42,.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className={`inline-flex items-center gap-2 rounded-full bg-linear-to-r px-3 py-1 text-[11px] font-semibold ${toneStyles(item.tone, dark)}`}>
-            <Icon size={14} />
-            {item.delta}
+    <header className="sticky top-0 z-30 flex h-20 items-center gap-3 border-b border-slate-200/70 bg-slate-50/85 px-4 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/85 sm:px-6">
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="grid size-10 place-items-center rounded-xl bg-white text-slate-600 shadow-sm dark:bg-slate-900 lg:hidden"
+        aria-label="Open navigation"
+      >
+        <Menu size={20} />
+      </button>
+      <div className="relative hidden max-w-md flex-1 sm:block">
+        <Search
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+          size={18}
+        />
+        <input
+          aria-label="Search"
+          placeholder="Search assets, employees, bookings..."
+          className="w-full rounded-xl border border-slate-200 bg-white/80 py-2.5 pl-11 pr-4 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-950"
+        />
+      </div>
+      <div className="ml-auto flex items-center gap-2">
+        <button
+          onClick={() => setDark(!dark)}
+          aria-label="Toggle dark mode"
+          className="grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:text-brand-500 dark:border-slate-800 dark:bg-slate-900 dark:text-amber-300"
+        >
+          {dark ? <Sun size={19} /> : <Moon size={19} />}
+        </button>
+        <button
+          aria-label="Notifications"
+          className="relative grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 dark:border-slate-800 dark:bg-slate-900"
+        >
+          <Bell size={19} />
+          <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
+        </button>
+        <div className="ml-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-3 dark:border-slate-800 dark:bg-slate-900">
+          <div className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-indigo-600 text-xs font-bold text-white">
+            AS
           </div>
-          <p className="mt-4 text-sm font-medium text-slate-500 dark:text-slate-400">{item.label}</p>
-          <div className="mt-2 flex items-end gap-3">
-            <strong className="text-3xl font-black tracking-tight text-slate-950 dark:text-white">{item.value}</strong>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">
-              {item.trend.startsWith('-') ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
-              {item.trend}
-            </span>
+          <div className="hidden sm:block">
+            <p className="text-xs font-bold text-navy-900 dark:text-white">
+              Abhay Sonone
+            </p>
+            <p className="text-[10px] text-slate-400">Administrator</p>
           </div>
-        </div>
-        <div className={`grid size-12 place-items-center rounded-2xl bg-linear-to-br ${toneStyles(item.tone, dark)} shadow-inner`}>
-          <Icon size={20} />
+          <ChevronDown className="hidden text-slate-400 sm:block" size={14} />
         </div>
       </div>
-      <div className="mt-5 h-2 rounded-full bg-slate-100/90 dark:bg-white/10">
-        <div className="h-full w-2/3 rounded-full bg-linear-to-r from-sky-500 via-indigo-500 to-fuchsia-500 opacity-90" />
+    </header>
+  );
+}
+function KpiCard({ item, index }) {
+  const I = item.icon;
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06 }}
+      whileHover={{ y: -4 }}
+      className={`rounded-2xl border border-slate-200/70 bg-gradient-to-br ${item.gradient} via-white to-white p-5 shadow-sm backdrop-blur-xl transition-all duration-300 dark:border-slate-800 dark:via-slate-900 dark:to-slate-900`}
+    >
+      <div className="flex items-start justify-between">
+        <span
+          className={`grid size-11 place-items-center rounded-xl ${tone[item.tone]}`}
+        >
+          <I size={21} />
+        </span>
+        <span
+          className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${item.up ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10" : "bg-red-50 text-red-500 dark:bg-red-500/10"}`}
+        >
+          {item.up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{" "}
+          {item.trend}
+        </span>
       </div>
+      <p className="mt-5 text-2xl font-extrabold tracking-tight text-navy-900 dark:text-white">
+        {item.value}
+      </p>
+      <p className="mt-1 text-xs font-medium text-slate-400">{item.label}</p>
     </motion.article>
-  )
+  );
 }
-
-export default function Dashboard() {
-  const navigate = useNavigate()
-  const analytics = useAssetFlow()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === 'undefined') return false
-    const saved = window.localStorage.getItem('assetflow-theme')
-    if (saved) return saved === 'dark'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode)
-    window.localStorage.setItem('assetflow-theme', darkMode ? 'dark' : 'light')
-  }, [darkMode])
-
-  const stats = useMemo(() => ({
-    returns: analytics.upcomingRetirement.length,
-    maintenance: analytics.maintenanceStatistics.totalRequests,
-  }), [analytics])
-
-  const kpis = useMemo(() => ([
-    { label: 'Total Assets', value: String(analytics.totalAssets), trend: '+12.4%', icon: PackageSearch, delta: 'vs last month', tone: 'blue' },
-    { label: 'Allocated Assets', value: String(analytics.allocatedAssets), trend: '+8.1%', icon: Users, delta: 'utilization', tone: 'indigo' },
-    { label: 'Available Assets', value: String(analytics.availableAssets), trend: '-3.6%', icon: BookMarked, delta: 'ready to assign', tone: 'emerald' },
-    { label: 'Active Bookings', value: String(analytics.datasets.bookings.filter((booking) => booking.status === 'approved').length), trend: '+18.9%', icon: CalendarDays, delta: 'across teams', tone: 'cyan' },
-    { label: 'Pending Transfers', value: String(analytics.datasets.transfers.filter((transfer) => transfer.status === 'pending').length), trend: '+4.2%', icon: RefreshCw, delta: 'awaiting approval', tone: 'amber' },
-    { label: 'Upcoming Returns', value: String(analytics.upcomingRetirement.length), trend: '+6.3%', icon: TimerReset, delta: 'due in 7 days', tone: 'rose' },
-  ]), [analytics])
-
-  const activityItems = useMemo(() => ([
-    { title: `${analytics.departmentUsage[0]?.name ?? 'Top department'} led usage with ${analytics.departmentUsage[0]?.usageHours ?? 0}h`, meta: 'Booking • derived from shared data', color: 'bg-blue-500' },
-    { title: `${analytics.maintenanceStatistics.resolvedRequests} maintenance requests resolved`, meta: 'Maintenance • live analytics', color: 'bg-emerald-500' },
-    { title: `${analytics.datasets.transfers.filter((transfer) => transfer.status === 'completed').length} transfer(s) completed`, meta: 'Transfer • shared source of truth', color: 'bg-indigo-500' },
-    { title: `${analytics.maintenanceStatistics.overdueRequests} items overdue for action`, meta: 'Alert • operational watchlist', color: 'bg-rose-500' },
-  ]), [analytics])
-
-  const notifications = useMemo(() => analytics.notifications.map((note) => note.title), [analytics.notifications])
-
-  const maintenance = useMemo(() => analytics.datasets.maintenanceRequests.slice(0, 3).map((request) => ({
-    asset: analytics.datasets.assets.find((asset) => asset.id === request.assetId)?.name ?? 'Unknown asset',
-    due: request.dueAt.includes('2026-07-12') ? 'Today' : request.dueAt,
-    priority: request.priority === 'critical' || request.priority === 'high' ? 'High' : request.priority === 'medium' ? 'Medium' : 'Low',
-  })), [analytics.datasets.assets, analytics.datasets.maintenanceRequests])
-
-  const returnEvents = useMemo(() => {
-    const counts = analytics.datasets.usageLogs.reduce((accumulator, log) => {
-      const day = new Date(log.startedAt).toLocaleDateString('en-US', { weekday: 'short' })
-      accumulator[day] = (accumulator[day] ?? 0) + 1
-      return accumulator
-    }, {})
-
-    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name) => ({ name, value: counts[name] ?? 0 }))
-  }, [analytics.datasets.usageLogs])
-
-  const statusData = useMemo(() => analytics.statusDistribution.map((item) => ({
-    name: item.name,
-    value: item.value,
-    color: item.name === 'Allocated' ? '#4f8cff' : item.name === 'Available' ? '#14b8a6' : item.name === 'Maintenance' ? '#f59e0b' : '#f43f5e',
-  })), [analytics.statusDistribution])
-
-  const logout = () => {
-    localStorage.removeItem('assetflow_auth')
-    navigate('/login', { replace: true })
-  }
-
+function Charts() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(16,185,129,.16),transparent_24%),linear-gradient(180deg,#f6f9ff_0%,#eef3fb_52%,#e9eef8_100%)] text-slate-900 dark:bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(99,102,241,.12),transparent_24%),linear-gradient(180deg,#07111f_0%,#0b1526_55%,#0f172a_100%)] dark:text-slate-100">
-      <div className="mx-auto flex min-h-screen max-w-[1800px]">
-        <aside className={`fixed inset-y-0 left-0 z-40 w-72.5 border-r border-white/60 bg-white/75 px-4 py-5 shadow-[20px_0_60px_rgba(15,23,42,.06)] backdrop-blur-2xl transition-transform duration-300 dark:border-white/10 dark:bg-slate-950/70 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="flex items-center justify-between px-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[.2em] text-sky-500">AssetFlow ERP</p>
-              <h1 className="mt-1 text-lg font-black text-slate-950 dark:text-white">Operations Console</h1>
-            </div>
-            <button onClick={() => setSidebarOpen(false)} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-white/5 lg:hidden" aria-label="Close sidebar">
-              <ChevronLeft size={18} />
+    <div className="grid gap-5 xl:grid-cols-[1.65fr_1fr]">
+      <Card className="min-w-0">
+        <Header
+          title="Asset Overview"
+          subtitle="Allocation performance over the last 6 months"
+          action={
+            <button className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 dark:border-slate-700">
+              Last 6 months
             </button>
-          </div>
-
-          <div className="mt-6 rounded-3xl bg-linear-to-br from-slate-950 via-slate-900 to-slate-800 p-5 text-white shadow-xl shadow-slate-950/20 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950">
-            <p className="text-xs uppercase tracking-[.22em] text-sky-300">Live status</p>
-            <div className="mt-3 flex items-end justify-between">
-              <div>
-                <p className="text-sm text-slate-300">Availability</p>
-                <strong className="text-4xl font-black">{analytics.assetUtilization}%</strong>
-              </div>
-              <div className="rounded-2xl bg-white/10 p-3 text-sky-300">
-                <TriangleAlert size={22} />
-              </div>
+          }
+        />
+        <div className="h-72 p-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={chartData}
+              margin={{ left: -20, right: 6, top: 10 }}
+            >
+              <defs>
+                <linearGradient id="allocated" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3563e9" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#3563e9" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="4 4"
+                vertical={false}
+                stroke="#e2e8f0"
+                opacity={0.6}
+              />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
+              />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Area
+                type="monotone"
+                dataKey="allocated"
+                stroke="#3563e9"
+                strokeWidth={3}
+                fill="url(#allocated)"
+              />
+              <Area
+                type="monotone"
+                dataKey="available"
+                stroke="#10b981"
+                strokeWidth={2}
+                fill="transparent"
+                strokeDasharray="5 5"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+      <Card>
+        <Header
+          title="Asset Utilization"
+          subtitle="Current portfolio distribution"
+        />
+        <div className="relative h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={utilization}
+                dataKey="value"
+                innerRadius={61}
+                outerRadius={82}
+                paddingAngle={4}
+                stroke="none"
+              >
+                {utilization.map((x) => (
+                  <Cell key={x.name} fill={x.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={tooltipStyle} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="pointer-events-none absolute inset-0 grid place-items-center">
+            <div className="text-center">
+              <b className="text-2xl text-navy-900 dark:text-white">1,284</b>
+              <p className="text-[10px] text-slate-400">TOTAL</p>
             </div>
-            <div className="mt-4 h-2 rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-linear-to-r from-cyan-400 to-emerald-400" style={{ width: `${analytics.assetUtilization}%` }} />
-            </div>
-          </div>
-
-          <nav className="mt-6 space-y-2">
-            {sidebarLinks.map((item) => {
-              const Icon = item.icon
-              return (
-                <a key={item.label} href="#" className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${item.active ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10 dark:bg-white dark:text-slate-950' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/5'}`}>
-                  <Icon size={18} />
-                  {item.label}
-                </a>
-              )
-            })}
-          </nav>
-
-          <div className="mt-6 rounded-3xl border border-white/60 bg-white/60 p-4 dark:border-white/10 dark:bg-white/5">
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-slate-500 dark:text-slate-400">Today</p>
-            <div className="mt-3 space-y-3 text-sm">
-              <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 dark:bg-white/5"><span>Due returns</span><strong>{stats.returns}</strong></div>
-              <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 dark:bg-white/5"><span>Maintenance tasks</span><strong>{stats.maintenance}</strong></div>
-            </div>
-          </div>
-
-          <button onClick={logout} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-rose-500/10 dark:hover:text-rose-200">
-            <LogOut size={17} />
-            Logout
-          </button>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col lg:pl-72.5">
-          <header className="sticky top-0 z-30 border-b border-white/60 bg-white/65 px-4 py-4 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/55 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap items-center gap-3">
-              <button onClick={() => setSidebarOpen(true)} className="rounded-2xl border border-white/70 bg-white/80 p-3 text-slate-700 shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 lg:hidden" aria-label="Open sidebar">
-                <Menu size={18} />
-              </button>
-
-              <div className="relative min-w-55 flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input aria-label="Search" placeholder="Search assets, users, bookings..." className="w-full rounded-2xl border border-white/70 bg-white/85 py-3 pl-11 pr-4 text-sm outline-none ring-0 transition placeholder:text-slate-400 focus:border-sky-300 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500" />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button onClick={() => setDarkMode((value) => !value)} className="grid size-11 place-items-center rounded-2xl border border-white/70 bg-white/80 text-slate-700 transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5 dark:text-slate-200" aria-label="Toggle theme">
-                  {darkMode ? <SunMedium size={18} /> : <MoonStar size={18} />}
-                </button>
-                <button className="relative grid size-11 place-items-center rounded-2xl border border-white/70 bg-white/80 text-slate-700 transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5 dark:text-slate-200" aria-label="Notifications">
-                  <Bell size={18} />
-                  <span className="absolute right-2 top-2 size-2 rounded-full bg-rose-500" />
-                </button>
-                <div className="hidden items-center gap-3 rounded-2xl border border-white/70 bg-white/80 px-3 py-2 shadow-sm dark:border-white/10 dark:bg-white/5 sm:flex">
-                  <div className="grid size-9 place-items-center rounded-xl bg-linear-to-br from-sky-500 to-indigo-600 text-sm font-bold text-white">AJ</div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-950 dark:text-white">Aarav Jain</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Asset Manager</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-            <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
-              <section className="overflow-hidden rounded-4xl border border-white/70 bg-white/70 p-6 shadow-[0_25px_80px_rgba(15,23,42,.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/55 sm:p-8">
-                <div className="grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
-                  <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      Enterprise asset intelligence in motion
-                    </div>
-                    <h2 className="mt-5 max-w-3xl text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">Run assets, bookings, transfers, and maintenance from one polished control center.</h2>
-                    <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">A premium ERP-style dashboard for fast decisions, stronger accountability, and cleaner operations across every team.</p>
-
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      {quickActions.map((action) => {
-                        const Icon = action.icon
-                        return (
-                          <button key={action.label} className="group inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:text-sky-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-white">
-                            <Icon size={16} className="transition group-hover:scale-110" />
-                            {action.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-2xl bg-slate-950 px-4 py-3 text-white shadow-lg shadow-slate-950/15 dark:bg-white dark:text-slate-950">
-                        <p className="text-xs uppercase tracking-[.2em] text-slate-300 dark:text-slate-500">Overdue</p>
-                        <div className="mt-1 flex items-end gap-2"><strong className="text-2xl font-black">{analytics.maintenanceStatistics.overdueRequests}</strong><span className="text-sm text-rose-300 dark:text-rose-600">Assets overdue for return</span></div>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-white/10 dark:bg-white/5">
-                        <p className="text-xs uppercase tracking-[.2em] text-slate-400 dark:text-slate-500">Allocated</p>
-                        <strong className="mt-1 block text-2xl font-black text-slate-950 dark:text-white">{analytics.allocatedAssets}</strong>
-                        <span className="text-sm text-emerald-600 dark:text-emerald-300">+8.1% this month</span>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-white/10 dark:bg-white/5">
-                        <p className="text-xs uppercase tracking-[.2em] text-slate-400 dark:text-slate-500">Bookings today</p>
-                        <strong className="mt-1 block text-2xl font-black text-slate-950 dark:text-white">{analytics.datasets.bookings.length}</strong>
-                        <span className="text-sm text-sky-600 dark:text-sky-300">{analytics.datasets.bookings.filter((booking) => booking.status === 'pending').length} require approval</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                    <Panel className="bg-linear-to-br from-slate-950 to-slate-800 text-white dark:from-slate-900 dark:to-slate-950">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs uppercase tracking-[.2em] text-sky-300">Availability heat</p>
-                          <strong className="mt-2 block text-3xl font-black">{analytics.assetUtilization}%</strong>
-                        </div>
-                        <div className="rounded-2xl bg-white/10 p-3 text-sky-300"><CalendarDays size={20} /></div>
-                      </div>
-                      <div className="mt-4 h-2 rounded-full bg-white/10"><div className="h-full rounded-full bg-linear-to-r from-sky-400 to-emerald-400" style={{ width: `${analytics.assetUtilization}%` }} /></div>
-                      <p className="mt-3 text-sm text-slate-300">Healthy inventory balance across field teams and office operations.</p>
-                    </Panel>
-
-                    <Panel>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs uppercase tracking-[.2em] text-slate-400 dark:text-slate-500">Live alerts</p>
-                          <strong className="mt-2 block text-lg font-black text-slate-950 dark:text-white">Operational watchlist</strong>
-                        </div>
-                        <AlertTriangle className="text-amber-500" size={22} />
-                      </div>
-                      <div className="mt-4 space-y-3">
-                        {activityItems.slice(0, 3).map((alert) => (
-                          <div key={alert.title} className="flex items-center gap-3 rounded-2xl bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-700 dark:text-amber-200">
-                            <span className="size-2 rounded-full bg-amber-500" />
-                            {alert.title}
-                          </div>
-                        ))}
-                      </div>
-                    </Panel>
-                  </div>
-                </div>
-              </section>
-
-              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {kpis.map((item) => <KpiCard key={item.label} item={item} dark={darkMode} />)}
-              </section>
-
-              <section className="grid gap-6 xl:grid-cols-[1.45fr_.85fr]">
-                <div className="space-y-6">
-                  <Panel>
-                    <SectionHeading eyebrow="Activity center" title="Recent activity timeline" copy="The latest allocations, maintenance updates, bookings, and transfers at a glance." />
-                    <div className="space-y-4">
-                      {activityItems.map((item) => (
-                        <motion.div key={item.title} whileHover={{ x: 4 }} className="flex gap-4 rounded-2xl border border-slate-200/70 bg-white/75 p-4 dark:border-white/10 dark:bg-white/5">
-                          <div className={`mt-1 size-3 rounded-full ${item.color}`} />
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-slate-950 dark:text-white">{item.title}</p>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.meta}</p>
-                          </div>
-                          <Clock3 className="shrink-0 text-slate-400" size={16} />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </Panel>
-
-                  <div className="grid gap-6 xl:grid-cols-2">
-                    <Panel>
-                      <SectionHeading eyebrow="Bookings" title="Demand trend" />
-                      <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={returnEvents}>
-                            <defs>
-                              <linearGradient id="assetflowDemand" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#4f8cff" stopOpacity={0.36} />
-                                <stop offset="95%" stopColor="#4f8cff" stopOpacity={0.02} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.18} />
-                            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                            <YAxis tickLine={false} axisLine={false} />
-                            <Tooltip />
-                            <Area type="monotone" dataKey="value" stroke="#4f8cff" fill="url(#assetflowDemand)" strokeWidth={3} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </Panel>
-
-                    <Panel>
-                      <SectionHeading eyebrow="Asset mix" title="Status distribution" />
-                      <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={70} outerRadius={110} paddingAngle={4}>
-                              {statusData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="mt-2 space-y-2">
-                        {statusData.map((entry) => (
-                          <div key={entry.name} className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 text-sm dark:bg-white/5">
-                            <div className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />{entry.name}</div>
-                            <strong>{entry.value}%</strong>
-                          </div>
-                        ))}
-                      </div>
-                    </Panel>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <Panel>
-                    <SectionHeading eyebrow="Operations" title="Upcoming maintenance" />
-                    <div className="space-y-3">
-                      {maintenance.map((item) => (
-                        <div key={item.asset} className="rounded-2xl border border-slate-200/70 bg-white/75 p-4 dark:border-white/10 dark:bg-white/5">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="font-semibold text-slate-950 dark:text-white">{item.asset}</p>
-                              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Due {item.due}</p>
-                            </div>
-                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.priority === 'High' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-200' : item.priority === 'Medium' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-200' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-200'}`}>{item.priority}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Panel>
-
-                  <Panel>
-                    <SectionHeading eyebrow="Notifications" title="Recent updates" />
-                    <div className="space-y-3">
-                      {notifications.map((note) => (
-                        <div key={note} className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-white/5 dark:text-slate-300">
-                          <Bell className="mt-0.5 text-sky-500" size={16} />
-                          <span>{note}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </Panel>
-
-                  <Panel>
-                    <SectionHeading eyebrow="Calendar" title="Return schedule" />
-                    <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      {returnEvents.map((item) => (
-                        <div key={item.name} className="rounded-2xl border border-slate-200/70 bg-white/75 p-2 dark:border-white/10 dark:bg-white/5">
-                          <p>{item.name}</p>
-                          <div className="mt-2 rounded-xl bg-slate-100 px-1 py-3 text-sm font-black text-slate-950 dark:bg-white/10 dark:text-white">{item.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </Panel>
-                </div>
-              </section>
-            </motion.div>
           </div>
         </div>
-
-        <AnimatePresence>
-          {sidebarOpen ? <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-30 bg-slate-950/40 lg:hidden" aria-label="Close sidebar overlay" /> : null}
-        </AnimatePresence>
+        <div className="grid grid-cols-3 gap-2 px-5 pb-5">
+          {utilization.map((x) => (
+            <div key={x.name} className="text-center">
+              <span
+                className="mx-auto block size-2 rounded-full"
+                style={{ background: x.color }}
+              />
+              <b className="mt-1 block text-xs text-slate-700 dark:text-slate-200">
+                {x.value}%
+              </b>
+              <span className="text-[9px] text-slate-400">{x.name}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+function MiniCalendar() {
+  const days = ["S", "M", "T", "W", "T", "F", "S"];
+  const nums = [
+    29, 30, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 1, 2,
+  ];
+  return (
+    <Card>
+      <Header
+        title="July 2026"
+        action={<CalendarDays size={18} className="text-brand-500" />}
+      />
+      <div className="grid grid-cols-7 gap-1 p-5 pt-4 text-center">
+        {days.map((d, i) => (
+          <span key={i} className="pb-2 text-[10px] font-bold text-slate-400">
+            {d}
+          </span>
+        ))}
+        {nums.map((n, i) => (
+          <span
+            key={i}
+            className={`grid aspect-square place-items-center rounded-lg text-[11px] ${i < 2 || i > 32 ? "text-slate-300 dark:text-slate-700" : n === 12 ? "bg-brand-500 font-bold text-white shadow-md shadow-blue-500/30" : n === 18 || n === 21 || n === 25 ? "bg-blue-50 font-semibold text-brand-500 dark:bg-blue-500/10" : "text-slate-600 dark:text-slate-300"}`}
+          >
+            {n}
+          </span>
+        ))}
       </div>
-    </main>
-  )
+    </Card>
+  );
+}
+export default function Dashboard() {
+  const stats = calculateDashboardStats(),
+    users = getAll(KEYS.users);
+  const values = {
+    "Total Assets": stats.totalAssets,
+    "Allocated Assets": stats.allocatedAssets,
+    "Available Assets": stats.availableAssets,
+    Employees: users.length,
+    "Active Bookings": stats.activeBookings,
+    "Pending Maintenance": stats.pendingMaintenance,
+    "Pending Transfers": stats.pendingTransfers,
+    "Upcoming Returns": getAll(KEYS.allocations).filter(
+      (a) => a.status === "ACTIVE" && a.expectedReturnDate,
+    ).length,
+  };
+  const kpis = kpiDefinitions.map((item) => ({
+    ...item,
+    value: String(values[item.label] ?? item.value),
+  }));
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [createMenu, setCreateMenu] = useState(false);
+  const [dark, setDark] = useState(
+    () => localStorage.getItem("assetflow_theme") === "dark",
+  );
+  const navigate = useNavigate();
+  const today = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date());
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("assetflow_theme", dark ? "dark" : "light");
+    return () => document.documentElement.classList.remove("dark");
+  }, [dark]);
+  const logout = () => {
+    localStorage.removeItem("assetflow_auth");
+    navigate("/login", { replace: true });
+  };
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-700 transition-colors dark:bg-slate-950 dark:text-slate-300">
+      <DashboardSidebar
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+        onLogout={logout}
+      />
+      <div
+        className="transition-[margin] duration-300 lg:ml-[var(--side)]"
+        style={{ "--side": collapsed ? "88px" : "256px" }}
+      >
+        <Topbar dark={dark} setDark={setDark} setMobileOpen={setMobileOpen} />
+        <main className="dashboard-scroll mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-sm font-semibold text-brand-500">{today}</p>
+              <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-navy-900 dark:text-white sm:text-3xl">
+                Good Morning, Abhay 👋
+              </h1>
+              <p className="mt-1 text-sm text-slate-400">
+                Welcome back! Here's an overview of your organization's assets
+                and operations.
+              </p>
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => setCreateMenu(!createMenu)}
+                aria-expanded={createMenu}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-brand-600 sm:w-auto"
+              >
+                <Plus
+                  className={`transition ${createMenu ? "rotate-45" : ""}`}
+                  size={18}
+                />{" "}
+                Create New
+              </button>
+              <AnimatePresence>
+                {createMenu && (
+                  <>
+                    <button
+                      aria-label="Close quick create menu"
+                      onClick={() => setCreateMenu(false)}
+                      className="fixed inset-0 z-30 cursor-default"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                      className="absolute right-0 top-12 z-40 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      {[
+                        [
+                          Plus,
+                          "Register Asset",
+                          "Create a new tracked asset",
+                          "/dashboard/assets?create=1",
+                        ],
+                        [
+                          UserPlus,
+                          "Add Employee",
+                          "Open organization users",
+                          "/dashboard/organization",
+                        ],
+                        [
+                          CalendarDays,
+                          "Book Resource",
+                          "Reserve shared resources",
+                          "/dashboard/bookings",
+                        ],
+                        [
+                          ClipboardPlus,
+                          "Maintenance Request",
+                          "Open maintenance workflow",
+                          "/dashboard/maintenance",
+                        ],
+                      ].map(([Icon, title, copy, path]) => (
+                        <button
+                          key={title}
+                          onClick={() => {
+                            setCreateMenu(false);
+                            navigate(path);
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                        >
+                          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-brand-500 dark:bg-blue-500/10">
+                            <Icon size={17} />
+                          </span>
+                          <span>
+                            <b className="block text-xs text-navy-900 dark:text-white">
+                              {title}
+                            </b>
+                            <span className="mt-0.5 block text-[10px] text-slate-400">
+                              {copy}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
+            {kpis.map((x, i) => (
+              <KpiCard key={x.label} item={x} index={i} />
+            ))}
+          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-5 flex flex-col gap-4 rounded-2xl border border-red-200 bg-gradient-to-r from-red-50 to-orange-50 p-4 dark:border-red-900/50 dark:from-red-950/30 dark:to-orange-950/20 sm:flex-row sm:items-center"
+          >
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-red-100 text-red-600 dark:bg-red-500/15">
+              <Clock3 size={20} />
+            </span>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-red-900 dark:text-red-300">
+                {stats.overdueReturns} assets overdue for return
+              </p>
+              <p className="mt-0.5 text-xs text-red-600/80 dark:text-red-400">
+                Review outstanding assignments to avoid workflow delays.
+              </p>
+            </div>
+            <button className="flex items-center gap-2 text-xs font-bold text-red-600">
+              Review assets <ArrowRight size={14} />
+            </button>
+          </motion.div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              [
+                Plus,
+                "Register Asset",
+                "bg-blue-50 text-blue-600 dark:bg-blue-500/10",
+              ],
+              [
+                UserPlus,
+                "Add Employee",
+                "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10",
+              ],
+              [
+                CalendarDays,
+                "Book Resource",
+                "bg-violet-50 text-violet-600 dark:bg-violet-500/10",
+              ],
+              [
+                ClipboardPlus,
+                "Raise Maintenance Request",
+                "bg-amber-50 text-amber-600 dark:bg-amber-500/10",
+              ],
+            ].map(([I, t, c]) => (
+              <motion.button
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.98 }}
+                key={t}
+                className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 text-left text-sm font-bold text-navy-900 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+              >
+                <span
+                  className={`grid size-10 place-items-center rounded-xl ${c}`}
+                >
+                  <I size={19} />
+                </span>
+                {t}
+                <ArrowRight className="ml-auto text-slate-300" size={16} />
+              </motion.button>
+            ))}
+          </div>
+          <div className="mt-5">
+            <Charts />
+          </div>
+          <div className="mt-5 grid items-start gap-5 xl:grid-cols-[1.55fr_1fr]">
+            <Card>
+              <Header
+                title="Recent Activity"
+                subtitle="Live updates across your organization"
+                action={
+                  <button className="text-xs font-bold text-brand-500">
+                    View all
+                  </button>
+                }
+              />
+              <div className="p-5">
+                {activities.map((x, i) => (
+                  <div
+                    key={x.title}
+                    className="relative flex gap-4 pb-5 last:pb-0"
+                  >
+                    <div className="relative">
+                      <span
+                        className={`block size-3 rounded-full ring-4 ring-${x.color}-50 bg-${x.color}-500 dark:ring-slate-800`}
+                      />
+                      {i < activities.length - 1 && (
+                        <span className="absolute left-[5px] top-4 h-full w-px bg-slate-200 dark:bg-slate-800" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col justify-between gap-1 sm:flex-row">
+                        <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                          {x.title}
+                        </p>
+                        <span className="w-fit rounded-full bg-slate-100 px-2 py-1 text-[9px] font-bold uppercase text-slate-500 dark:bg-slate-800">
+                          {x.type}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">{x.meta}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <div className="grid gap-5">
+              <Card>
+                <Header
+                  title="Upcoming Maintenance"
+                  action={<Wrench size={18} className="text-amber-500" />}
+                />
+                <div className="space-y-4 p-5">
+                  {maintenance.map((x) => (
+                    <div key={x.title} className="flex items-center gap-3">
+                      <div className="w-11 rounded-xl bg-slate-100 py-1.5 text-center dark:bg-slate-800">
+                        <b className="block text-sm text-navy-900 dark:text-white">
+                          {x.date}
+                        </b>
+                        <span className="text-[8px] font-bold text-slate-400">
+                          {x.month}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-bold text-slate-700 dark:text-slate-200">
+                          {x.title}
+                        </p>
+                        <p className="mt-1 truncate text-[10px] text-slate-400">
+                          {x.meta}
+                        </p>
+                      </div>
+                      <span className="text-[9px] font-bold text-amber-500">
+                        {x.priority}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <Card>
+                <Header
+                  title="Recent Notifications"
+                  action={<Bell size={18} className="text-brand-500" />}
+                />
+                <div className="space-y-4 p-5">
+                  {notifications.map((x) => (
+                    <div key={x.title} className="flex gap-3">
+                      <span className="mt-1 size-2 shrink-0 rounded-full bg-brand-500" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                          {x.title}
+                        </p>
+                        <p className="mt-1 truncate text-[10px] text-slate-400">
+                          {x.meta}
+                        </p>
+                      </div>
+                      <span className="text-[9px] text-slate-400">
+                        {x.time}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <MiniCalendar />
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
 }

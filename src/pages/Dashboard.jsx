@@ -136,7 +136,7 @@ function KpiCard({ item, dark }) {
 	return <motion.article whileHover={{ y: -5 }} transition={transitions} className="group rounded-3xl border border-white/70 bg-white/80 p-5 shadow-[0_16px_40px_rgba(15,23,42,.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
 		<div className="flex items-start justify-between gap-4">
 			<div>
-				<div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r px-3 py-1 text-[11px] font-semibold ${toneStyles(item.tone, dark)}`}>
+				<div className={`inline-flex items-center gap-2 rounded-full bg-linear-to-r px-3 py-1 text-[11px] font-semibold ${toneStyles(item.tone, dark)}`}>
 					<Icon size={14} />
 					{item.delta}
 				</div>
@@ -149,12 +149,12 @@ function KpiCard({ item, dark }) {
 					</span>
 				</div>
 			</div>
-			<div className={`grid size-12 place-items-center rounded-2xl bg-gradient-to-br ${toneStyles(item.tone, dark)} shadow-inner`}>
+			<div className={`grid size-12 place-items-center rounded-2xl bg-linear-to-br ${toneStyles(item.tone, dark)} shadow-inner`}>
 				<Icon size={20} />
 			</div>
 		</div>
 		<div className="mt-5 h-2 rounded-full bg-slate-100/90 dark:bg-white/10">
-			<div className="h-full w-2/3 rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 opacity-90" />
+			<div className="h-full w-2/3 rounded-full bg-linear-to-r from-sky-500 via-indigo-500 to-fuchsia-500 opacity-90" />
 		</div>
 	</motion.article>
 }
@@ -190,9 +190,9 @@ export default function Dashboard() {
 		navigate('/login', { replace: true })
 	}
 
-	return <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,.18),transparent_28%),radial-gradient(circle_at_top_right,_rgba(16,185,129,.16),transparent_24%),linear-gradient(180deg,_#f6f9ff_0%,_#eef3fb_52%,_#e9eef8_100%)] text-slate-900 dark:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,.12),transparent_28%),radial-gradient(circle_at_top_right,_rgba(99,102,241,.12),transparent_24%),linear-gradient(180deg,_#07111f_0%,_#0b1526_55%,_#0f172a_100%)] dark:text-slate-100">
+	return <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(16,185,129,.16),transparent_24%),linear-gradient(180deg,#f6f9ff_0%,#eef3fb_52%,#e9eef8_100%)] text-slate-900 dark:bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(99,102,241,.12),transparent_24%),linear-gradient(180deg,#07111f_0%,#0b1526_55%,#0f172a_100%)] dark:text-slate-100">
 		<div className="mx-auto flex min-h-screen max-w-[1800px]">
-			<aside className={`fixed inset-y-0 left-0 z-40 w-[290px] border-r border-white/60 bg-white/75 px-4 py-5 shadow-[20px_0_60px_rgba(15,23,42,.06)] backdrop-blur-2xl transition-transform duration-300 dark:border-white/10 dark:bg-slate-950/70 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+			<aside className={`fixed inset-y-0 left-0 z-40 w-72.5 border-r border-white/60 bg-white/75 px-4 py-5 shadow-[20px_0_60px_rgba(15,23,42,.06)] backdrop-blur-2xl transition-transform duration-300 dark:border-white/10 dark:bg-slate-950/70 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 				<div className="flex items-center justify-between px-2">
 					<div>
 						<p className="text-xs font-semibold uppercase tracking-[.2em] text-sky-500">AssetFlow ERP</p>
@@ -203,7 +203,7 @@ export default function Dashboard() {
 					</button>
 				</div>
 
-				<div className="mt-6 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-5 text-white shadow-xl shadow-slate-950/20 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950">
+				<div className="mt-6 rounded-3xl bg-linear-to-br from-slate-950 via-slate-900 to-slate-800 p-5 text-white shadow-xl shadow-slate-950/20 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950">
 					<p className="text-xs uppercase tracking-[.22em] text-sky-300">Live status</p>
 					<div className="mt-3 flex items-end justify-between">
 						<div>
@@ -215,7 +215,7 @@ export default function Dashboard() {
 						</div>
 					</div>
 					<div className="mt-4 h-2 rounded-full bg-white/10">
-						<div className="h-full w-[92%] rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400" />
+						<div className="h-full w-[92%] rounded-full bg-linear-to-r from-cyan-400 to-emerald-400" />
 					</div>
 				</div>
 
@@ -244,14 +244,14 @@ export default function Dashboard() {
 				</button>
 			</aside>
 
-			<div className="flex min-w-0 flex-1 flex-col lg:pl-[290px]">
+			<div className="flex min-w-0 flex-1 flex-col lg:pl-72.5">
 				<header className="sticky top-0 z-30 border-b border-white/60 bg-white/65 px-4 py-4 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/55 sm:px-6 lg:px-8">
 					<div className="flex flex-wrap items-center gap-3">
 						<button onClick={() => setSidebarOpen(true)} className="rounded-2xl border border-white/70 bg-white/80 p-3 text-slate-700 shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 lg:hidden" aria-label="Open sidebar">
 							<Menu size={18} />
 						</button>
 
-						<div className="relative min-w-[220px] flex-1">
+						<div className="relative min-w-55 flex-1">
 							<Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
 							<input aria-label="Search" placeholder="Search assets, users, bookings..." className="w-full rounded-2xl border border-white/70 bg-white/85 py-3 pl-11 pr-4 text-sm outline-none ring-0 transition placeholder:text-slate-400 focus:border-sky-300 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500" />
 						</div>
@@ -265,7 +265,7 @@ export default function Dashboard() {
 								<span className="absolute right-2 top-2 size-2 rounded-full bg-rose-500" />
 							</button>
 							<div className="hidden items-center gap-3 rounded-2xl border border-white/70 bg-white/80 px-3 py-2 shadow-sm dark:border-white/10 dark:bg-white/5 sm:flex">
-								<div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 text-sm font-bold text-white">AJ</div>
+								<div className="grid size-9 place-items-center rounded-xl bg-linear-to-br from-sky-500 to-indigo-600 text-sm font-bold text-white">AJ</div>
 								<div>
 									<p className="text-sm font-semibold text-slate-950 dark:text-white">Aarav Jain</p>
 									<p className="text-xs text-slate-500 dark:text-slate-400">Asset Manager</p>
@@ -277,7 +277,7 @@ export default function Dashboard() {
 
 				<div className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
 					<motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
-						<section className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/70 p-6 shadow-[0_25px_80px_rgba(15,23,42,.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/55 sm:p-8">
+						<section className="overflow-hidden rounded-4xl border border-white/70 bg-white/70 p-6 shadow-[0_25px_80px_rgba(15,23,42,.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/55 sm:p-8">
 							<div className="grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
 								<div>
 									<div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200">
@@ -317,7 +317,7 @@ export default function Dashboard() {
 								</div>
 
 								<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-									<Panel className="bg-gradient-to-br from-slate-950 to-slate-800 text-white dark:from-slate-900 dark:to-slate-950">
+									<Panel className="bg-linear-to-br from-slate-950 to-slate-800 text-white dark:from-slate-900 dark:to-slate-950">
 										<div className="flex items-center justify-between">
 											<div>
 												<p className="text-xs uppercase tracking-[.2em] text-sky-300">Availability heat</p>
@@ -325,7 +325,7 @@ export default function Dashboard() {
 											</div>
 											<div className="rounded-2xl bg-white/10 p-3 text-sky-300"><CalendarDays size={20} /></div>
 										</div>
-										<div className="mt-4 h-2 rounded-full bg-white/10"><div className="h-full w-[64%] rounded-full bg-gradient-to-r from-sky-400 to-emerald-400" /></div>
+										<div className="mt-4 h-2 rounded-full bg-white/10"><div className="h-full w-[64%] rounded-full bg-linear-to-r from-sky-400 to-emerald-400" /></div>
 										<p className="mt-3 text-sm text-slate-300">Healthy inventory balance across field teams and office operations.</p>
 									</Panel>
 

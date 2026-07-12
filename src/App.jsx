@@ -7,6 +7,7 @@ import AssetAllocationPage from './pages/AssetAllocationPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AssetPage from './pages/AssetPage'
 import NotificationCenter from './pages/NotificationCenter'
+import AuditManagementPage from './pages/AuditManagementPage'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         />
         <Route path="/assets" element={<AssetPage />} />
         <Route path="/notifications" element={<NotificationCenter />} />
+        <Route path="/audit-management" element={<AuditManagementPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

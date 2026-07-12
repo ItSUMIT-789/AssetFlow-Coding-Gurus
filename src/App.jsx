@@ -81,6 +81,22 @@ export default function App() {
           }
         />
         <Route
+          path="/dashboard/employees"
+          element={
+            <ProtectedRoute allowedRoles={ROUTE_ROLES.organization}>
+              <Suspense
+                fallback={
+                  <div className="grid min-h-screen place-items-center bg-slate-50">
+                    <div className="size-9 animate-spin rounded-full border-4 border-blue-100 border-t-brand-500" />
+                  </div>
+                }
+              >
+                <OrganizationSetup />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/dashboard/assets"
           element={
             <ProtectedRoute allowedRoles={ROUTE_ROLES.assets}>

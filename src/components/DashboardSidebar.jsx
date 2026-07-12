@@ -24,7 +24,7 @@ const nav = [
   [LayoutDashboard, "Dashboard", "/dashboard"],
   [Building2, "Organization Setup", "/dashboard/organization", "organization"],
   [Boxes, "Assets", "/dashboard/assets", "assets"],
-  [Users, "Employees", "/dashboard/organization", "organization"],
+  [Users, "Employees", "/dashboard/employees", "organization"],
   [
     ArrowLeftRight,
     "Allocation & Transfer",

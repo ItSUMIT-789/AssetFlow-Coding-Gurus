@@ -1,6 +1,6 @@
 import { Bell, ChevronDown, Menu, Moon, Search, Sun } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
-import { ROLE_LABELS } from "../utils/rbac";
+import { ROLE_LABELS, ROLES } from "../utils/rbac";
 
 export default function AdminTopbar({
   dark,
@@ -11,7 +11,8 @@ export default function AdminTopbar({
   placeholder = "Search assets, employees, bookings...",
 }) {
   const user = getCurrentUser();
-  const initials = (user?.name || "AssetFlow User")
+  const displayName = user?.role === ROLES.ADMIN ? "Admin" : user?.name;
+  const initials = (displayName || "AssetFlow User")
     .split(" ")
     .map((part) => part[0])
     .slice(0, 2)
@@ -60,7 +61,7 @@ export default function AdminTopbar({
           </div>
           <div className="hidden sm:block">
             <p className="text-xs font-bold text-navy-900 dark:text-white">
-              {user?.name}
+              {displayName}
             </p>
             <p className="text-[10px] text-slate-400">
               {ROLE_LABELS[user?.role] || user?.designation}

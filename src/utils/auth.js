@@ -40,6 +40,9 @@ export function loginUser(email, password) {
       x.password === password,
   );
   if (!user) throw new Error("Invalid email or password.");
+  return createSession(user);
+}
+function createSession(user) {
   const { password: _, ...safe } = user;
   void _;
   localStorage.setItem(
@@ -48,6 +51,13 @@ export function loginUser(email, password) {
   );
   localStorage.setItem("assetflow_auth", "true");
   return safe;
+}
+export function loginAsDemoAdmin() {
+  const admin = getRegisteredUsers().find(
+    (user) => user.active !== false && user.role === ROLES.ADMIN,
+  );
+  if (!admin) throw new Error("Demo administrator account is unavailable.");
+  return createSession(admin);
 }
 export function getCurrentUser() {
   try {

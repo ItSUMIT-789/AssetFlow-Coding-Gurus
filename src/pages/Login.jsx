@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Mail } from "lucide-react";
+import { Mail, ShieldCheck } from "lucide-react";
 import AuthLayout from "../components/AuthLayout";
 import {
   InputField,
@@ -8,7 +8,7 @@ import {
   PasswordField,
 } from "../components/FormFields";
 import { validateLogin } from "../utils/validation";
-import { loginUser } from "../utils/auth";
+import { loginAsDemoAdmin, loginUser } from "../utils/auth";
 export default function Login() {
   const [form, setForm] = useState({
       email: "",
@@ -42,6 +42,15 @@ export default function Login() {
         setLoading(false);
       }
     }, 500);
+  };
+  const enterAsDemoAdmin = () => {
+    setErrors({});
+    try {
+      loginAsDemoAdmin();
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      setErrors({ form: error.message });
+    }
   };
   return (
     <AuthLayout
@@ -103,6 +112,15 @@ export default function Login() {
           </a>
         </div>
         <LoadingButton loading={loading}>Login</LoadingButton>
+        <button
+          type="button"
+          onClick={enterAsDemoAdmin}
+          disabled={loading}
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-500 bg-white px-5 py-3 text-sm font-bold text-brand-500 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <ShieldCheck size={18} />
+          Enter as Demo Admin
+        </button>
         <p className="mt-6 text-center text-sm text-slate-500">
           New to AssetFlow?{" "}
           <Link to="/register" className="font-bold text-brand-500">

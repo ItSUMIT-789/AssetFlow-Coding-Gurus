@@ -114,11 +114,11 @@ function Topbar({ dark, setDark, setMobileOpen }) {
         </button>
         <div className="ml-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-3 dark:border-slate-800 dark:bg-slate-900">
           <div className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-indigo-600 text-xs font-bold text-white">
-            AS
+            AD
           </div>
           <div className="hidden sm:block">
             <p className="text-xs font-bold text-navy-900 dark:text-white">
-              Abhay Sonone
+              Admin
             </p>
             <p className="text-[10px] text-slate-400">Administrator</p>
           </div>
@@ -330,6 +330,13 @@ export default function Dashboard() {
     day: "numeric",
     year: "numeric",
   }).format(new Date());
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12
+      ? "Good Morning"
+      : hour < 17
+        ? "Good Afternoon"
+        : "Good Evening";
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("assetflow_theme", dark ? "dark" : "light");
@@ -358,7 +365,7 @@ export default function Dashboard() {
             <div>
               <p className="text-sm font-semibold text-brand-500">{today}</p>
               <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-navy-900 dark:text-white sm:text-3xl">
-                Good Morning, Abhay 👋
+                {greeting}, Admin 👋
               </h1>
               <p className="mt-1 text-sm text-slate-400">
                 Welcome back! Here's an overview of your organization's assets

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Building2,
@@ -261,6 +261,8 @@ function Field({ label, value, onChange, placeholder, disabled }) {
 }
 
 export default function OrganizationSetup() {
+  const location = useLocation();
+  const isEmployeesPage = location.pathname === "/dashboard/employees";
   const [collapsed, setCollapsed] = useState(false),
     [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(
@@ -282,7 +284,9 @@ export default function OrganizationSetup() {
     [status, setStatus] = useState("All"),
     [page, setPage] = useState(1);
   const [modal, setModal] = useState(null),
-    [activeTab, setActiveTab] = useState("Departments"),
+    [activeTab, setActiveTab] = useState(
+      isEmployeesPage ? "Employees" : "Departments",
+    ),
     [deleteTarget, setDeleteTarget] = useState(null);
   const [categories, setCategories] = useState(() => getAll(KEYS.categories)),
     [users, setUsers] = useState(() => getAll(KEYS.users));
@@ -328,7 +332,7 @@ export default function OrganizationSetup() {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         onLogout={logout}
-        activePage="Organization Setup"
+        activePage={isEmployeesPage ? "Employees" : "Organization Setup"}
       />
       <div
         className="transition-[margin] duration-300 lg:ml-[var(--side)]"
